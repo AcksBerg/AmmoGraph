@@ -35,6 +35,8 @@ try {
     await capture('caliber-filter', page.locator('.ag-sidebar'));
     await capture('comparison-table', page.locator('.ag-table-panel'));
     await page.evaluate(() => scrollTo(0, 0));
+    await openSettingsSection(page, 'view');
+    await capture('view-settings', page.locator('.ag-exclusions .ag-menu-panel'));
     await openSettingsSection(page, 'attributes');
     await page.locator('[data-attributes="tooltip"]>summary').click();
     await capture('attribute-settings', page.locator('.ag-exclusions .ag-menu-panel'));
@@ -43,9 +45,6 @@ try {
     await openSettingsSection(page, 'exclusions');
     await capture('exclusions', page.locator('.ag-exclusions .ag-menu-panel'));
     await page.keyboard.press('Escape');
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.evaluate(() => scrollTo(0, 0));
-    await capture('mobile');
     await context.close();
 } finally {
     await browser.close();

@@ -76,7 +76,7 @@ The **20x1, 26x75, and 40x46** calibers are hidden by default. They remain fully
 
 ## View sections and scrolling
 
-Under **View** in the gear menu, the left caliber/filter sidebar, table, and **Selected ammunition** details panel can each be hidden. The remaining sections use the available width. Axis selection and the chart legend remain accessible. Hiding a section does not itself change the caliber selection or a pinned comparison reference.
+Under **Graph view** in the gear menu, the left caliber/filter sidebar, table, and **Selected ammunition** details panel can each be hidden. The remaining sections use the available width. Axis selection and the chart legend remain accessible. Hiding a section does not itself change the caliber selection or a pinned comparison reference.
 
 On desktop, the filter sidebar uses the available viewport height and remains visible while scrolling toward the table, together with its search and All/None controls. Only the caliber list scrolls internally. On narrow screens, the sidebar stays compact with a maximum height of 300 px.
 
@@ -102,7 +102,7 @@ The upper bound is exactly `Maximum + min(abs(Maximum) × 0.1, 10)`. The lower b
 
 Overlapping points are grouped. The hover tooltip shows one compact card per cartridge, with vertical attribute/value rows. By default it includes the symbol, caliber, name, damage, penetration, and bullet velocity. Units are attached to attribute names and numeric values are right-aligned.
 
-The tooltip also opens on keyboard focus, closes with Escape, and stays open when the pointer moves into the card. Long attribute lists scroll inside the tooltip and stay within the window. Hovering a grouped point fans its cartridges out around their common location, with dashed connectors back to the actual data point. Select one of these symbols directly, or choose a cartridge in the main table. **Show all names** also labels every fanned member; switching it off hides these labels again. Large stacks use multiple rings. Leaving the fan, pressing Escape, zooming, or panning collapses it. Tab focuses a group, Enter moves into its individual symbols, and Enter or Space selects a focused symbol. On touch screens, tap a group and then tap a member.
+The tooltip also opens on keyboard focus, closes with Escape, and stays open when the pointer moves into the card. Long attribute lists scroll inside the tooltip and stay within the window. Hovering a grouped point fans its cartridges out around their common location, with dashed connectors back to the actual data point. Select one of these symbols directly, or choose a cartridge in the main table. **Show all names** also labels every fanned member; switching it off hides these labels again. Large stacks use multiple rings. Leaving the fan, pressing Escape, zooming, or panning collapses it. Tab focuses a group, Enter moves into its individual symbols, and Enter or Space selects a focused symbol.
 
 Symbol, caliber, and ammunition name form a fixed header in both the tooltip and details panel, outside the configurable metric selection. In the tooltip, the symbol always sits immediately beside the caliber. Saved attribute lists from older versions are reduced to metrics while preserving their order.
 
@@ -112,7 +112,7 @@ In the details panel, **All values** remains below the visible metrics, includin
 
 The gear menu provides selections for the tooltip, selected ammunition, and one shared list for the X/Y axes. Available metrics are on the left and selected metrics on the right. Clicking marks an entry. The four central controls add or remove one entry or all entries.
 
-Drag and drop works between lists and for reordering the selected list. On touch devices, dragging starts after a short hold; a normal swipe scrolls the lists. Up/down buttons remain available. With the keyboard, Enter moves a focused entry between lists; Alt+Up/Down changes its order.
+Drag and drop works between lists and for reordering the selected list. Up/down buttons remain available. With the keyboard, Enter moves a focused entry between lists; Alt+Up/Down changes its order.
 
 Symbol, caliber, and name remain fixed headers outside these options. Default metrics are damage, penetration, and velocity. Both axis dropdowns use the same available selection and order, but their active metrics are chosen independently. Removing an active metric selects the first remaining one. Empty lists are allowed; with no axis metrics, the chart pauses and shows a message.
 
@@ -120,7 +120,7 @@ Each selection can be reset. Membership and order persist in cookies. Older sepa
 
 ## Chart navigation
 
-The mouse wheel zooms around the pointer. Dragging with the left mouse button pans even at the base zoom level. Touch devices support two-finger zoom and one-finger pan. The plus/minus buttons zoom around the chart center; reset restores the full data view. With chart focus, `+`, `-`, arrow keys, and `Home` are also available.
+The mouse wheel zooms around the pointer. Dragging with the left mouse button pans even at the base zoom level. The plus/minus buttons zoom around the chart center; reset restores the full data view. With chart focus, `+`, `-`, arrow keys, and `Home` are also available.
 
 Zoom is limited to 1–100×. Panning may extend beyond the original data bounds by at most 20% of the currently visible axis span on each side. At 1×, this allows movement of ±20% of the full displayed range. Axes and the reset button account for panning independently of zoom. Points are clipped at the plot edge and keep their size during zoom. Dragging does not accidentally select a cartridge.
 
@@ -193,7 +193,7 @@ Under **Caliber names** in the gear menu, select a loaded caliber and save a per
 
 The page provides no write function for `caliber-names.json` or `default-exclusions.json`, and no buttons to open or edit them. Server defaults are changed by editing these files outside the page and restarting the server. Personal browser names can override those defaults for that visitor's view. The editor lists only calibers actually loaded.
 
-The four settings sections, **View**, **Attributes and order**, **Caliber names**, and **Hide calibers and ammunition**, are accordions. They start collapsed; opening a main section closes the previous one. Attribute selectors remain independently expandable within their section.
+The four settings sections, **Graph view**, **Attributes and order**, **Caliber names**, and **Hide calibers and ammunition**, are accordions. They start collapsed; opening a main section closes the previous one. Attribute selectors remain independently expandable within their section.
 
 ## Project layout and styling
 
@@ -227,17 +227,17 @@ Browser checks need a running server and use the existing Chrome installation wi
 
 The table check covers visible comparison cells, column selection and sorting, cookie restoration, reversible default exclusions, separate visitor contexts, and hiding both whole-load and pellet views together.
 
-The menu check covers icon menu positioning and labels, excluded-entry grouping, complete attribute names and units, consistent percentage conversion, and keyboard, mobile, and right-to-left interaction.
+The menu check covers icon menu positioning and labels, excluded-entry grouping, complete attribute names and units, consistent percentage conversion, and keyboard and right-to-left interaction.
 
-The navigation check covers wheel zoom, mouse drag, selection after zoom, double-clicking, legend selection without the sidebar, saved view options, and touch pinch/pan using Chromium touch events. A physical mobile device was not used.
+The navigation check covers wheel zoom, mouse drag, selection after zoom, double-clicking, legend selection without the sidebar, saved view options, and browser interaction.
 
-The filter/pan check covers suspending and reapplying the table filter, the reversible Airsoft exclusion, the pellet toggle without the sidebar, and exact ±20% pan limits at 1× using mouse and touch.
+The filter/pan check covers suspending and reapplying the table filter, the reversible Airsoft exclusion, the pellet toggle without the sidebar, and exact ±20% pan limits at 1× using the mouse.
 
-The search/symbol check covers empty-message priority, shared search normalization, all ten SVG symbol variants, and alignment on desktop and mobile.
+The search/symbol check covers empty-message priority, shared search normalization, all ten SVG symbol variants, and alignment at different viewport widths.
 
-The presentation check covers tooltip tables with mouse and keyboard, overlapping points, independent attribute selections and ordering, reset and cookie migration, axis changes, internally scrolling details, and the sticky filter sidebar on desktop and mobile.
+The presentation check covers tooltip tables with mouse and keyboard, overlapping points, independent attribute selections and ordering, reset and cookie migration, axis changes, internally scrolling details, and the sticky filter sidebar at different viewport widths.
 
-The attribute-transfer check covers individual/bulk actions, mouse drag between lists and reordering, up/down buttons, touch drag after a hold, shared and empty axis lists, and preference restoration and migration.
+The attribute-transfer check covers individual/bulk actions, mouse drag between lists and reordering, up/down buttons, shared and empty axis lists, and preference restoration and migration.
 
 `tests/StartupFixture` is **not part of the distributed mod**. Install it temporarily in a test installation for the integration check. It adds a caliber early and changes its damage from 111 to 777 after `PostLoad`. `node AmmoGraph/tests/browser.mjs --fixture` checks the final value on the prepared server. Remove the test mod afterward and restart the server. It changes only loaded tables in the test process, not database files.
 

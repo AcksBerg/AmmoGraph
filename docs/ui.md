@@ -24,7 +24,7 @@ In the code: `SearchedCalibers`, `Toggle`, and `ApplyCaliberFilter` in [AmmoGrap
 
 ![Scatter plot with a highlighted reference cartridge and its statistics in the right-hand details panel](images/chart-details.png)
 
-Each point represents at least one ammunition variant. Hovering a grouped point fans its cartridges out in a circle, with dashed connectors to their original shared position. Larger groups use several rings. Click an individual symbol to pin that cartridge as the comparison reference; hovering it shows its own tooltip and comparison values. The fan closes when you leave it, press Escape, or navigate the chart. Keyboard focus and tapping a group also open it. Use the mouse wheel to zoom and drag to pan.
+Each point represents at least one ammunition variant. Hovering a grouped point fans its cartridges out in a circle, with dashed connectors to their original shared position. Larger groups use several rings. Click an individual symbol to pin that cartridge as the comparison reference; hovering it shows its own tooltip and comparison values. The fan closes when you leave it, press Escape, or navigate the chart. Keyboard focus also opens it. Use the mouse wheel to zoom and drag to pan.
 
 In the code: SVG fan members and `Select` in [AmmoGraphPage](../Web/AmmoGraphPage.razor), fan positioning and interaction in [spiderfy.js](../wwwroot/spiderfy.js), comparisons in [AmmoComparison](../Core/AmmoComparison.cs), local navigation in [navigation.js](../wwwroot/navigation.js), and detail values in [ComparedValue](../Web/ComparedValue.razor).
 
@@ -35,6 +35,14 @@ In the code: SVG fan members and `Select` in [AmmoGraphPage](../Web/AmmoGraphPag
 Numeric cells show the cartridge's value and, when a reference is selected, its difference from that reference. Search filters both the table and chart while the table is visible. The eye icon opens column selection; table headers control sorting.
 
 In the code: `VisibleItems`, `OrderedColumns`, and `SortItems` in [AmmoGraphPage](../Web/AmmoGraphPage.razor), numeric cells in [TableValue](../Web/TableValue.razor), and column selection in [ColumnPicker](../Web/ColumnPicker.razor).
+
+## View settings
+
+![Settings showing visibility controls for the filter sidebar, table, and selected ammunition](images/view-settings.png)
+
+Use **Graph view** to show or hide the filter sidebar, table, and selected-ammunition panel. The remaining sections use the available space.
+
+In the code: [ExclusionEditor](../Web/ExclusionEditor.razor) and the view toggles in [AmmoGraphPage](../Web/AmmoGraphPage.razor).
 
 ## Attributes and order
 
@@ -69,11 +77,3 @@ The diagram combines penetration rate and separate component durability lines on
 ![Simulation showing penetration rate, separate class-5 plate and class-3 insert durability, damage and an example shot](images/simulation-results.png)
 
 [Full magazine and armor configuration screenshot](images/simulation.png).
-
-## Mobile view
-
-<img src="images/mobile.png" alt="AmmoGraph at a mobile viewport width of 390 pixels, with an adapted header, filter list, axis controls, and chart" width="390">
-
-On narrow screens, sections stack vertically and the caliber list has a limited height. This screenshot uses a 390 × 844 browser viewport; it was not captured on a physical mobile device.
-
-In the code: media queries in [graph.css](../wwwroot/graph.css), layout sizing in [presentation.js](../wwwroot/presentation.js), and touch navigation in [navigation.js](../wwwroot/navigation.js).

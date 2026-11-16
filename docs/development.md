@@ -12,7 +12,7 @@ At server startup, AmmoGraph reads the ammunition data already loaded by SPT. It
 | --- | --- | --- |
 | Data preparation | Read SPT templates and prepare names and numbers | [Core/AmmoCatalog.cs](../Core/AmmoCatalog.cs), [Core/AmmoSnapshot.cs](../Core/AmmoSnapshot.cs) |
 | User interface | Display filters, chart, table, and details | [Web/AmmoGraphPage.razor](../Web/AmmoGraphPage.razor) |
-| Browser behavior | Handle cookies, zoom, tooltip positioning, and drag gestures | [wwwroot/preferences.js](../wwwroot/preferences.js), [wwwroot/navigation.js](../wwwroot/navigation.js) |
+| Browser behavior | Handle cookies, zoom, tooltip positioning, and dragging | [wwwroot/preferences.js](../wwwroot/preferences.js), [wwwroot/navigation.js](../wwwroot/navigation.js) |
 
 A `.razor` file combines HTML with C#. For example, `@foreach` generates one table row for each cartridge. Its `@code` section contains the component's state and methods.
 
@@ -222,6 +222,6 @@ The [ballistics simulator guide](simulation.md) explains the additional `Simulat
 | A configuration change does not appear | Edit the installed file beside the DLL and restart the server; personal names can override it. |
 | A cartridge is missing from the chart | Exclusions, caliber selection, pellet toggle, ammunition search, and missing axis values. |
 | Language or columns change after loading | Saved browser preferences are applied after the initial render. |
-| Gestures fire more than once after navigation | JavaScript event listeners must be removed in `DisposeAsync` or the unbind functions. |
+| Pointer actions fire more than once after navigation | JavaScript event listeners must be removed in `DisposeAsync` or the unbind functions. |
 
 The [interface reference](interfaces.md) describes the data contracts and browser attributes in detail.
