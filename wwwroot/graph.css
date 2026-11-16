@@ -153,14 +153,7 @@ the surrounding SPT web panel is unchanged. */
     width:42px;
     height:42px;
     border:1px solid #655c46;
-    color:var(--gold);
-    font-weight:700;
-    font-size:19px;
-    letter-spacing:-3px;
-    padding-right:3px
-}
-.ag-brand-mark span {
-    color:#eee4cc
+    flex-shrink:0
 }
 .ag-server-link {
     font-size:12px;
@@ -1091,7 +1084,20 @@ the surrounding SPT web panel is unchanged. */
 .ag-app :is(.ag-input,select) { background:var(--theme-input,#131c21); border-color:var(--line); }
 .ag-app .ag-icon-menu>summary { background:var(--theme-surface,linear-gradient(145deg,#2b383e,#202a30)); }
 .ag-app .ag-brand-mark { background:var(--theme-surface,linear-gradient(145deg,#3a3830,#25292a)); }
-.ag-brand-mark span { color:var(--text); }
+.ag-app .ag-brand-mark {
+    width:60px;
+    height:60px;
+    box-sizing:border-box;
+    padding:5px;
+    background:#fff;
+    border:1px solid #8b949c;
+    border-radius:10px;
+    box-shadow:0 1px 5px #0003;
+}
+.ag-brand-mark img { display:block; width:100%; height:100%; object-fit:contain; }
+@media(max-width:700px) {
+    .ag-app .ag-brand-mark { width:42px; height:42px; padding:3px; border-radius:7px; }
+}
 .ag-caliber.is-active { background:var(--theme-selected,linear-gradient(105deg,#2d4149,#25353c)); }
 .ag-app :is(.ag-caliber,.ag-legend button,.ag-chart-options label,.ag-pellet-option,.ag-details details>summary,.ag-attribute-picker>summary,.ag-attribute-row,.ag-column-options label,.ag-view-options label,.ag-exclusion-list label):hover { background:var(--theme-hover,#304149); }
 .ag-app .ag-comparison-table thead { background:var(--theme-input,#202c32); }

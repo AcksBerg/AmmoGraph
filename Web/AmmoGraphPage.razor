@@ -8,7 +8,7 @@
 <PageTitle>Ammo Graph · SPT</PageTitle>
 <div class="ag-app" lang="@Language" dir="@(T.RightToLeft ? "rtl" : "ltr")" data-theme="@Theme" data-ready="@(_preferencesLoaded ? "true" : "false")">
     <header class="ag-header">
-        <a href="/AmmoGraph" class="ag-brand"><span class="ag-brand-mark">A<span>G</span></span><span>SPT <strong>AMMO GRAPH</strong><small>@T["Subtitle"]</small></span></a>
+        <a href="/AmmoGraph" class="ag-brand"><span class="ag-brand-mark"><img src="/ammo-graph/AmmoGraph.png?v=0.25.2" alt="AmmoGraph" width="80" height="80" /></span><span>SPT <strong>AMMO GRAPH</strong><small>@T["Subtitle"]</small></span></a>
         <div class="ag-header-actions">
             <label class="ag-language"><span>@T["Language"]</span><select id="ag-language" @bind="Language" @bind:after="LanguageChanged">@foreach (var language in Catalog.Languages) { <option value="@language.Code">@language.Name</option> }</select></label>
             <ExclusionEditor Items="Snapshot.Items" ExcludedCalibers="ExcludedCalibers" ExcludedAmmo="ExcludedAmmo" Text="T" OnCaliberToggle="ToggleExcludedCaliber" OnAmmoToggle="ToggleExcludedAmmo" OnShowAll="ShowAllExcluded" OnReset="ResetExclusions" ShowFilters="ShowFilters" ShowTable="ShowTable" ShowDetails="ShowDetails" OnToggleFilters="ToggleFilters" OnToggleTable="ToggleTable" OnToggleDetails="ToggleDetails">

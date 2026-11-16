@@ -4,7 +4,7 @@
     <OutputType>Library</OutputType>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>0.25.1</Version>
+    <Version>0.25.2</Version>
     <SptRuntime Condition="'$(SptRuntime)' == ''">$(MSBuildProjectDirectory)/../SPT_Runtime</SptRuntime>
   </PropertyGroup>
   <ItemGroup>

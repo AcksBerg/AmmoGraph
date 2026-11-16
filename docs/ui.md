@@ -6,6 +6,14 @@ These screenshots were captured from the running local application using a separ
 
 ## Overview
 
+The header uses the original AmmoGraph logo on a white badge. Its border and shadow separate it from both theme backgrounds while keeping the black lettering and colored points visible.
+
+![AmmoGraph header in the light theme, showing the logo on a bordered white badge](images/header-light.png)
+
+![AmmoGraph header in the dark theme, showing the same logo on a white badge](images/header-dark.png)
+
+In the code: the logo is served from [wwwroot/AmmoGraph.png](../wwwroot/AmmoGraph.png), displayed by [AmmoGraphPage](../Web/AmmoGraphPage.razor), and styled by `.ag-brand-mark` in [graph.css](../wwwroot/graph.css).
+
 ![Desktop view with header, caliber list, axis selectors, chart, selected ammunition, and the start of the comparison table](images/overview.png)
 
 Language selection, settings, and the theme toggle are at the top. Choose calibers on the left, compare points in the center, and inspect a selected cartridge on the right. The table sits below the chart.

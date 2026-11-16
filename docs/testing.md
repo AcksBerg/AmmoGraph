@@ -102,6 +102,14 @@ The screenshot script writes `shots-to-kill-graph.png`, `shots-to-kill-table.png
 
 ## Keeping documentation current
 
+To verify the header logo on a running SPT server and regenerate the English light/dark header images:
+
+```powershell
+node AmmoGraph/tests/screenshots-header.mjs
+```
+
+This script supports `AMMOGRAPH_URL` and `CHROME_PATH`. It checks PNG loading, the white logo badge in both themes, layout at four window widths, theme restoration after reload, and browser errors. It writes `header-light.png` and `header-dark.png` into `docs/images` using an isolated browser context.
+
 - Update the field tables in [interfaces.md](interfaces.md) when changing the data model.
 - Update workflows in [development.md](development.md) when changing startup or page state.
 - Update [usage.md](usage.md), [ui.md](ui.md), and the affected screenshots when changing user interaction.

@@ -15,6 +15,7 @@ The header cartridge button opens a ballistics simulator: build a mixed magazine
 | use and configure the application | [Usage and configuration](docs/usage.md) |
 | understand Shots to Kill values and reference armor | [Shots to Kill](docs/shots-to-kill.md) |
 | review changes after v0.23.6 | [Cumulative release notes](docs/release-notes-since-0.23.6.md) |
+| review the latest header-logo update | [v0.25.2 release notes](docs/release-0.25.2.md) |
 | build magazines and simulate armor damage | [Ballistics simulator](docs/simulation.md) |
 | explore each part of the interface through screenshots | [Interface tour](docs/ui.md) |
 | understand the code as a new developer | [Developer guide](docs/development.md) |
