@@ -74,6 +74,20 @@ function create(svg, previous) {
             const x = Number(circle.getAttribute('cx')), y = Number(circle.getAttribute('cy'));
             circle.setAttribute('transform', `translate(${x} ${y}) scale(${1 / kx} 1) translate(${-x} ${-y})`);
         }
+        const screenScale = svg.getBoundingClientRect().width / 1040;
+        const available = Math.min(150, plot.width / Number(svg.dataset.lastShot) * kx - 8);
+        for (const label of svg.querySelectorAll('.ag-sim-ammo-name')) {
+            const x = Number(label.getAttribute('x'));
+            label.setAttribute('transform', `translate(${x} 0) scale(${1 / kx} 1) translate(${-x} 0)`);
+            const center = plot.left + (x - plot.left) * kx - (view.minX - base.minX) / width(base) * plot.width * kx;
+            label.style.display = '';
+            label.textContent = label.dataset.name;
+            if (available * screenScale < 42 || center - available / 2 < plot.left || center + available / 2 > plot.right) label.style.display = 'none';
+            else {
+                let name = label.dataset.name;
+                while (label.getComputedTextLength() > available && name.length > 1) { name = name.slice(0, -1); label.textContent = name + '\u2026'; }
+            }
+        }
         panel.querySelector('[data-sim-nav="out"]').disabled = minimumZoom;
         panel.querySelector('[data-sim-nav="reset"]').disabled = home;
         panel.querySelector('[data-sim-nav="in"]').disabled = k >= 100 - 1e-8 || points.length === 0;
@@ -153,6 +167,7 @@ function create(svg, previous) {
         } else return;
         event.preventDefault();
     }
+    window.addEventListener('resize', redraw);
     svg.addEventListener('wheel', wheel, { passive: false }); svg.addEventListener('pointerdown', down);
     window.addEventListener('pointermove', move, { passive: false }); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
     svg.addEventListener('click', suppressClick, true); svg.addEventListener('keydown', key); panel.addEventListener('click', action);
@@ -172,6 +187,7 @@ function create(svg, previous) {
         state: () => ({ view, signature }),
         destroy() {
             cancelAnimationFrame(frame);
+            window.removeEventListener('resize', redraw);
             svg.removeEventListener('wheel', wheel); svg.removeEventListener('pointerdown', down);
             window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up);
             svg.removeEventListener('click', suppressClick, true); svg.removeEventListener('keydown', key); panel.removeEventListener('click', action);

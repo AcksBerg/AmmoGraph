@@ -12,18 +12,22 @@
         <div class="ag-header-actions">
             <label class="ag-language"><span>@T["Language"]</span><select id="ag-language" @bind="Language" @bind:after="LanguageChanged">@foreach (var language in Catalog.Languages) { <option value="@language.Code">@language.Name</option> }</select></label>
             <ExclusionEditor Items="Snapshot.Items" ExcludedCalibers="ExcludedCalibers" ExcludedAmmo="ExcludedAmmo" Text="T" OnCaliberToggle="ToggleExcludedCaliber" OnAmmoToggle="ToggleExcludedAmmo" OnShowAll="ShowAllExcluded" OnReset="ResetExclusions" ShowFilters="ShowFilters" ShowTable="ShowTable" ShowDetails="ShowDetails" OnToggleFilters="ToggleFilters" OnToggleTable="ToggleTable" OnToggleDetails="ToggleDetails">
-                <details class="ag-settings-section ag-attribute-settings" name="ag-settings" data-settings-section="attributes"><summary>@T["Attributes"]</summary>
+                <details class="ag-settings-section ag-attribute-settings" name="ag-settings" data-settings-section="attributes"><summary>@T["Attributes"]<small>@T["SettingsAttributesHint"]</small></summary>
                     <AttributePicker Scope="tooltip" Title="@T["Tooltip"]" Selected="TooltipColumns" Options="MetricOptions" Defaults="DefaultAxes" Text="T" OnChange="v => SetAttributes(0, v)" />
                     <AttributePicker Scope="details" Title="@T["Selected"]" Selected="DetailColumns" Options="MetricOptions" Defaults="DefaultAxes" Text="T" OnChange="v => SetAttributes(1, v)" />
                     <AttributePicker Scope="axes" Title="@(T["XAxis"] + " / " + T["YAxis"])" Selected="XColumns" Options="MetricOptions" Defaults="DefaultAxes" Text="T" OnChange="v => SetAttributes(2, v)" />
                 </details>
                 <CaliberNameEditor Items="Snapshot.Items" Names="EffectiveCaliberNames" Text="T" OnSave="SavePersonalName" OnReset="ResetPersonalNames" />
             </ExclusionEditor>
-            <button type="button" class="ag-theme-toggle ag-view-toggle" data-view-toggle aria-label="@(SimulationMode ? T["SimOpenGraph"] : T["SimOpenSimulator"])" title="@(SimulationMode ? T["SimOpenGraph"] : T["SimOpenSimulator"])" aria-pressed="@SimulationMode.ToString().ToLowerInvariant()" @onclick="ToggleView"><MenuIcon Kind="@(SimulationMode ? "graph" : "cartridge")" /></button>
+            <button type="button" class="ag-theme-toggle ag-view-toggle" data-view-toggle aria-label="@(SimulationMode ? T["SimOpenGraph"] : T["SimOpenSimulator"])" title="@(SimulationMode ? T["SimOpenGraph"] : T["SimOpenSimulator"])" aria-pressed="@SimulationMode.ToString().ToLowerInvariant()" @onclick="ToggleView"><MenuIcon Kind="@(SimulationMode ? "graph" : "cartridge")" /><span>@(SimulationMode ? T["AmmoGraphLabel"] : T["SimTitle"])</span></button>
             <ThemePicker Text="T" OnToggle="ToggleTheme" />
             <a class="ag-server-link" href="/">SPT ↗</a>
         </div>
     </header>
+    <div class="ag-preference-feedback">
+        <span data-save-status role="status" aria-live="polite" aria-atomic="true" data-applied="@T["SettingsApplied"]" data-saved="@T["SettingsSaved"]"></span>
+        <div class="ag-error ag-preference-error" data-save-error hidden><span role="alert">@T["SettingsSaveFailed"]</span> <button type="button" data-retry-save>@T["RetrySave"]</button></div>
+    </div>
     @if (!Catalog.Ready)
     {
         <main class="ag-loading" role="status">@T["Loading"]</main>
@@ -58,7 +62,7 @@
             <main class="ag-main">
                 @if (SimulationMode)
                 {
-                    <BallisticsSimulator @ref="_simulator" Catalog="Catalog.Simulation" Workspace="SimulatorWorkspace" CaliberId="@SimulatorCaliberId" Ammo="SimulatorAmmo" Text="T" Language="@Language" OnChanged="SimulatorChanged" OnAmmoHover="SimulatorHover" />
+                    <BallisticsSimulator @ref="_simulator" Catalog="Catalog.Simulation" Workspace="SimulatorWorkspace" CaliberId="@SimulatorCaliberId" Ammo="SimulatorAmmo" Text="T" Language="@Language" OnChanged="SimulatorChanged" OnAmmoHover="SimulatorHover" ShowAmmoNames="SimAmmoNames" OnToggleAmmoNames="ToggleSimAmmoNames" />
                 }
                 else
                 {
@@ -68,7 +72,7 @@
                         <button class="ag-swap" disabled="@(XColumns.Count == 0)" aria-label="@T["XAxis"] ↔ @T["YAxis"]" @onclick="SwapAxes">⇄</button>
                         <label>@T["YAxis"]<select id="ag-y" disabled="@(YColumns.Count == 0)" @bind="YAxis" @bind:after="Changed">@foreach (var key in YColumns) { <option value="@key">@Metric(key).DisplayLabel</option> }</select></label>
                     </div>
-                    <div class="ag-chart-options"><label><input type="checkbox" @bind="DynamicScale" @bind:after="Changed" /> @T["AutoScale"]</label><label><input type="checkbox" @bind="ShowNames" @bind:after="Changed" /> @T["ShowNames"]</label></div>
+                    <div class="ag-chart-options"><button type="button" class="ag-attribute-shortcut" data-open-settings="attributes">@T["GraphAttributes"]</button><label><input type="checkbox" @bind="DynamicScale" @bind:after="Changed" /> @T["AutoScale"]</label><label><input type="checkbox" @bind="ShowNames" @bind:after="Changed" /> @T["ShowNames"]</label></div>
                 </section>
                 <div class="ag-analysis @(!ShowDetails ? "ag-no-details" : "")">
                     <section class="ag-chart-panel" aria-label="@T["Chart"]">
@@ -130,7 +134,7 @@
                                 }
                                 </g>
                             </svg>
-                            @if (plotted.Length == 0) { <div class="ag-chart-empty" role="status">@(XColumns.Count == 0 ? T["NoAxisAttributes"] : visible.Length == 0 ? EmptyMessage : T["Missing"])</div> }
+                            @if (plotted.Length == 0) { <div class="ag-chart-empty ag-error" role="status">@(XColumns.Count == 0 ? T["NoAxisAttributes"] : visible.Length == 0 ? EmptyMessage : T["Missing"])</div> }
                         </div>
                         <p class="ag-navigation-hint">@T["NavigationHint"]</p>
                         <div class="ag-legend-bulk"><button type="button" data-legend-all @onclick="SelectAll">@T["All"]</button><button type="button" data-legend-none @onclick="SelectNone">@T["None"]</button><label class="ag-pellet-option"><input id="ag-pellets" type="checkbox" @bind="ShowPellets" @bind:after="Changed" />@T["ShowPellets"]</label></div>
@@ -166,30 +170,32 @@
                 }
                 @if (ShowTable || SimulationMode)
                 {
-                <section class="ag-table-panel" aria-label="@T["Visible"]">
+                <section class="ag-table-panel" aria-label="@T["Visible"]" style="--ag-table-height:@(TableHeight)px">
                     <div class="ag-table-heading"><div><h2>@T["Visible"]</h2><span class="ag-count">@visible.Length @T["Rows"]</span></div><div class="ag-table-tools"><input class="ag-input" maxlength="128" aria-label="@T["AmmoSearch"]" placeholder="@T["AmmoSearch"]" @bind="ActiveSearch" @bind:event="oninput" @bind:after="Changed" /><ColumnPicker Metrics="Snapshot.Metrics" Selected="TableColumns" Text="T" OnToggle="ToggleColumn" OnReset="ResetColumns" /></div></div>
-                    <div class="ag-table-scroll"><table class="ag-comparison-table"><thead><tr>
+                    <div class="ag-table-scroll" id="ag-ammunition-table"><table class="ag-comparison-table"><thead><tr>
+                        @if (SimulationMode) { <th>@T["SimMagazine"]</th> }
                         @foreach (var key in OrderedColumns)
                         { <th data-column="@key" class="@(key is "Name" or "Caliber" ? "" : "ag-numeric")" aria-sort="@(SortKey == key ? Descending ? "descending" : "ascending" : "none")"><button @onclick="() => Sort(key)">@(key == "Name" ? T["Ammo"] : key == "Caliber" ? T["Calibers"] : Metric(key).DisplayLabel) <span>@(SortKey == key ? Descending ? "↓" : "↑" : "↕")</span></button></th> }
-                        @if (SimulationMode) { <th>@T["SimMagazine"]</th> }
                     </tr></thead><tbody>
                         @foreach (var ammo in SortItems(visible))
                         {
                             <tr data-ammo="@ammo.Id" class="@(SelectedId == ammo.Id ? "is-selected" : "")" @onclick="() => Select(ammo.Id)" @onmouseenter="() => Hover(ammo.Id)" @onmouseleave="ClearHover">
+                                @if (SimulationMode)
+                                {
+                                    <td class="ag-sim-table-actions" @onclick:stopPropagation="true"><button type="button" aria-label="@(T["SimStart"] + ": " + ammo.Name)" @onclick='() => AddToMagazine(ammo.TemplateId, "start")'>@T["SimStart"]</button><button type="button" aria-label="@(T["SimMiddle"] + ": " + ammo.Name)" @onclick='() => AddToMagazine(ammo.TemplateId, "middle")'>@T["SimMiddle"]</button><button type="button" aria-label="@(T["SimEnd"] + ": " + ammo.Name)" @onclick='() => AddToMagazine(ammo.TemplateId, "end")'>@T["SimEnd"]</button><button type="button" disabled="@(!(_simulator?.ContainsAmmo(ammo.TemplateId) ?? false))" aria-label="@(T["SimRemove"] + ": " + ammo.Name)" @onclick="() => RemoveFromMagazine(ammo.TemplateId)">@T["SimRemove"]</button></td>
+                                }
                                 @foreach (var key in OrderedColumns)
                                 {
                                     @if (key == "Name") { <td data-column="Name"><button class="ag-ammo-name" @onclick="() => Select(ammo.Id)" @onfocus="() => Hover(ammo.Id)" @onblur="ClearHover">@ammo.Name</button></td> }
                                     else if (key == "Caliber") { <td data-column="Caliber" class="ag-caliber-cell"><CaliberSymbol Shape="@Shape(ammo.CaliberId)" Style="@($"--caliber-color:{Color(ammo.CaliberId)}")" /> <span dir="ltr">@ammo.Caliber</span></td> }
                                     else { <td data-column="@key" class="ag-numeric" data-value="@(Value(ammo, key)?.ToString(CultureInfo.InvariantCulture))"><TableValue Item="ammo" Reference="reference" Metric="Metric(key)" Text="T" /></td> }
                                 }
-                                @if (SimulationMode)
-                                {
-                                    <td class="ag-sim-table-actions" @onclick:stopPropagation="true"><button type="button" aria-label="@(T["SimStart"] + ": " + ammo.Name)" @onclick='() => AddToMagazine(ammo.TemplateId, "start")'>@T["SimStart"]</button><button type="button" aria-label="@(T["SimMiddle"] + ": " + ammo.Name)" @onclick='() => AddToMagazine(ammo.TemplateId, "middle")'>@T["SimMiddle"]</button><button type="button" aria-label="@(T["SimEnd"] + ": " + ammo.Name)" @onclick='() => AddToMagazine(ammo.TemplateId, "end")'>@T["SimEnd"]</button></td>
-                                }
                             </tr>
                         }
                     </tbody></table></div>
-                    @if (visible.Length == 0) { <p class="ag-table-empty" role="status">@EmptyMessage</p> }
+                    @if (visible.Length == 0) { <p class="ag-table-empty ag-error" role="status">@EmptyMessage</p> }
+                    <div class="ag-table-resize" role="separator" tabindex="0" aria-orientation="horizontal" aria-label="@T["ResizeTable"]" aria-controls="ag-ammunition-table" aria-valuemin="160" aria-valuemax="760" aria-valuenow="@TableHeight" title="@T["TableHeightHint"]" data-table-resize><span aria-hidden="true"></span></div>
+                    <label class="ag-table-height">@T["TableHeight"]<input data-table-height type="range" min="160" max="760" step="20" @bind="TableHeight" @bind:event="oninput" @bind:after="Changed" aria-controls="ag-ammunition-table" /><output>@TableHeight px</output></label>
                 </section>
                 }
             </main>
@@ -238,8 +244,12 @@
     }
     private void ToggleView() { SimulationMode = !SimulationMode; EnsureSimulatorCaliber(); HoveredId = null; TooltipItems = []; _save = true; }
     private void SimulatorHover(string id) { var ammo = SimulatorAmmo.FirstOrDefault(a => a.TemplateId == id); if (ammo is not null) HoverGroup([ammo]); }
+    private int TableHeight = 360;
+    private bool SimAmmoNames = true;
+    private void ToggleSimAmmoNames() { SimAmmoNames = !SimAmmoNames; _save = true; }
     private void SimulatorChanged() => _save = true;
     private Task AddToMagazine(string id, string section) => _simulator?.AddAmmo(id, section) ?? Task.CompletedTask;
+    private Task RemoveFromMagazine(string id) => _simulator?.RemoveAmmo(id) ?? Task.CompletedTask;
     private string Language = "en";
     private string Theme = "system";
     private bool ShowAllValues;
@@ -260,7 +270,7 @@
     private void ResetPersonalNames() { PersonalCaliberNames.Clear(); PersonalNamesChanged(); }
     private UiText T => new(Language);
     private string XAxis = "Damage", YAxis = "PenetrationPower", Search = "", CaliberSearch = "", SortKey = "Name";
-    private bool DynamicScale = true, ShowNames, ShowPellets, Descending, _save, _preferencesLoaded;
+    private bool DynamicScale = true, ShowNames = true, ShowPellets, Descending, _save, _preferencesLoaded, _initialSave;
     private bool ShowFilters = true, ShowTable = true, ShowDetails = true;
     private string? SelectedId, HoveredId;
     private HashSet<string> SelectedCalibers = [];
@@ -303,7 +313,7 @@
     private IEnumerable<CaliberChoice> SearchedCalibers => AvailableCalibers.Where(c => AmmoSearch.Matches(ActiveCaliberSearch, c.Name));
     private void ApplyCaliberFilter() { if (AmmoSearch.Normalize(ActiveCaliberSearch).Length == 0) return; if (SimulationMode) SimulatorCaliberId = SearchedCalibers.FirstOrDefault()?.Id ?? ""; else SelectedCalibers = SearchedCalibers.Select(c => c.Id).ToHashSet(); Changed(); }
     private async Task ToggleTheme() { if (_module is null) return; Theme = await _module.InvokeAsync<string>("oppositeTheme"); _save = true; }
-    public sealed record Preferences(string Language, string[] Calibers, string XAxis, string YAxis, bool DynamicScale, bool ShowNames, bool ShowPellets, string Search, string CaliberSearch, string SortKey, bool Descending, string? SelectedId, bool? LegacyWholeLoad = null, string[]? Columns = null, string[]? ExcludedCalibers = null, string[]? ExcludedAmmo = null, string[]? IncludedDefaultAmmo = null, string[]? IncludedDefaultCalibers = null, bool? ShowFilters = null, bool? ShowTable = null, bool? ShowDetails = null, string[]? TooltipColumns = null, string[]? DetailColumns = null, string[]? XColumns = null, string[]? YColumns = null, string? Theme = null, Dictionary<string,string?>? CaliberNames = null, bool? SimulationMode = null, SimulatorDraft? Simulator = null);
+    public sealed record Preferences(string Language, string[] Calibers, string XAxis, string YAxis, bool DynamicScale, bool ShowNames, bool ShowPellets, string Search, string CaliberSearch, string SortKey, bool Descending, string? SelectedId, bool? LegacyWholeLoad = null, string[]? Columns = null, string[]? ExcludedCalibers = null, string[]? ExcludedAmmo = null, string[]? IncludedDefaultAmmo = null, string[]? IncludedDefaultCalibers = null, bool? ShowFilters = null, bool? ShowTable = null, bool? ShowDetails = null, string[]? TooltipColumns = null, string[]? DetailColumns = null, string[]? XColumns = null, string[]? YColumns = null, string? Theme = null, Dictionary<string,string?>? CaliberNames = null, bool? SimulationMode = null, SimulatorDraft? Simulator = null, bool? SimAmmoNames = null, int? TableHeight = null);
     private bool IsAllowed(AmmoEntry ammo) => !ExcludedCalibers.Contains(ammo.CaliberId) && !ExcludedAmmo.Contains(ammo.TemplateId);
     private bool HasAmmoFilter => ShowTable && AmmoSearch.Normalize(Search).Length > 0;
     private string EmptyMessage => !AvailableCalibers.Any(c => SelectedCalibers.Contains(c.Id)) ? T["NoCalibers"] : HasAmmoFilter ? T["Empty"] : T["EmptySelection"];
@@ -358,7 +368,7 @@
         {
             if (firstRender)
             {
-                _module = await JS.InvokeAsync<IJSObjectReference>("import", "/ammo-graph/preferences.js?v=24.2");
+                _module = await JS.InvokeAsync<IJSObjectReference>("import", "/ammo-graph/preferences.js?v=26.1");
                 await _module.InvokeVoidAsync("bindMenus");
                 await _module.InvokeVoidAsync("bindPresentation");
                 var saved = await _module.InvokeAsync<Preferences?>("load");
@@ -403,6 +413,8 @@
                     TableColumns = savedColumns.Count > 0 ? savedColumns : DefaultColumns.ToHashSet();
                     if (!TableColumns.Contains(SortKey)) { SortKey = OrderedColumns.First(); Descending = false; }
                     SimulationMode = saved.SimulationMode ?? false;
+                    SimAmmoNames = saved.SimAmmoNames ?? true;
+                    TableHeight = Math.Clamp(saved.TableHeight ?? 360, 160, 760);
                     if (saved.Simulator is { } simulator && simulator.CaliberId is { Length: >0 and <=128 }
                         && simulator.Magazine is { Capacity: >=1 and <=100, Middle: { Length: <=100 } } && simulator.Slots is { Count: <=64 }
                         && double.IsFinite(simulator.PelletHitPercent) && simulator.PelletHitPercent is >=0 and <=100)
@@ -412,14 +424,16 @@
                 }
                 _preferencesLoaded = true;
                 _save = true;
+                _initialSave = true;
                 StateHasChanged();
             }
             if (_save && _module is not null)
             {
                 _save = false;
-                await _module.InvokeAsync<bool>("save", new Preferences(Language, SelectedCalibers.Order().ToArray(), XAxis, YAxis, DynamicScale, ShowNames, ShowPellets, Search, CaliberSearch, SortKey, Descending, SelectedId,
-                    Columns: TableColumns.Order().ToArray(), ExcludedCalibers: ExcludedCalibers.Order().ToArray(), ExcludedAmmo: ExcludedAmmo.Order().ToArray(), IncludedDefaultAmmo: IncludedDefaultAmmo.Order().ToArray(), IncludedDefaultCalibers: IncludedDefaultCalibers.Order().ToArray(), ShowFilters: ShowFilters, ShowTable: ShowTable, ShowDetails: ShowDetails, TooltipColumns: TooltipColumns.ToArray(), DetailColumns: DetailColumns.ToArray(), XColumns: XColumns.ToArray(), YColumns: YColumns.ToArray(), Theme: Theme, CaliberNames: PersonalCaliberNames, SimulationMode: SimulationMode, Simulator: string.IsNullOrEmpty(SimulatorCaliberId) ? null : SimulatorWorkspace.Get(SimulatorCaliberId)));
+                await _module.InvokeVoidAsync(_initialSave ? "saveInitial" : "saveApplied", new Preferences(Language, SelectedCalibers.Order().ToArray(), XAxis, YAxis, DynamicScale, ShowNames, ShowPellets, Search, CaliberSearch, SortKey, Descending, SelectedId,
+                    Columns: TableColumns.Order().ToArray(), ExcludedCalibers: ExcludedCalibers.Order().ToArray(), ExcludedAmmo: ExcludedAmmo.Order().ToArray(), IncludedDefaultAmmo: IncludedDefaultAmmo.Order().ToArray(), IncludedDefaultCalibers: IncludedDefaultCalibers.Order().ToArray(), ShowFilters: ShowFilters, ShowTable: ShowTable, ShowDetails: ShowDetails, TooltipColumns: TooltipColumns.ToArray(), DetailColumns: DetailColumns.ToArray(), XColumns: XColumns.ToArray(), YColumns: YColumns.ToArray(), Theme: Theme, CaliberNames: PersonalCaliberNames, SimulationMode: SimulationMode, Simulator: string.IsNullOrEmpty(SimulatorCaliberId) ? null : SimulatorWorkspace.Get(SimulatorCaliberId), SimAmmoNames: SimAmmoNames, TableHeight: TableHeight));
             }
+            _initialSave = false;
             if (_module is not null) await _module.InvokeVoidAsync("syncChart");
             if (_module is not null) await _module.InvokeVoidAsync("syncFans");
             if (_module is not null) await _module.InvokeVoidAsync("syncPresentation");

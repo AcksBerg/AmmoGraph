@@ -175,6 +175,21 @@ Check(resetNames.Count==configuredNames.Count && configuredNames.All(kv=>resetNa
 var renamed=SnapshotBuilder.RenameCalibers(snapshot,privateNames);var renamedC=renamed.Items.Single(i=>i.Id==c.Id.ToString());var originalC=snapshot.Items.Single(i=>i.Id==c.Id.ToString());
 Check(renamedC.Caliber=="New x name" && ReferenceEquals(renamedC.Values,originalC.Values) && renamedC.Id==originalC.Id && originalC.Caliber=="5.45x39", "Private renaming preserves captured values, identities and other snapshots");
 Check(SnapshotBuilder.RenameCalibers(snapshot,CaliberNameMap.WithOverrides(configuredNames,new Dictionary<string,string?> { ["NotInstalled"]="Private alias",["545x39"]=" " })).Items.Count==snapshot.Items.Count, "Invalid and unavailable personal names do not create records");
+using (var usabilityStream = typeof(UiText).Assembly.GetManifestResourceStream("AmmoGraph.Resources.usability.json")!)
+using (var usability = System.Text.Json.JsonDocument.Parse(usabilityStream))
+{
+    var keys = usability.RootElement.GetProperty("en").EnumerateObject().Select(p => p.Name).ToArray();
+    foreach (var locale in usability.RootElement.EnumerateObject())
+    {
+        var text = new UiText(locale.Name);
+        Check(locale.Value.EnumerateObject().Count() == keys.Length && keys.All(key => locale.Value.TryGetProperty(key, out var value) && !string.IsNullOrWhiteSpace(value.GetString()) && text[key] == value.GetString()), "Usability messages load completely for " + locale.Name);
+    }
+    foreach (var code in config.RootElement.GetProperty("serverSupportedLocales").EnumerateArray().Select(c => c.GetString()!))
+    {
+        var canonical = UiText.LanguageCode(code) switch { "es-mx" => "es-es", "pt-br" => "pt-pt", var other => other };
+        Check(usability.RootElement.TryGetProperty(canonical, out _), "Usability translations cover server locale " + code);
+    }
+}
 SimulationChecks.Run();
 Console.WriteLine("All core checks passed.");
 

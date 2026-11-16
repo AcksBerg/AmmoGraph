@@ -34,6 +34,8 @@ Browsers use fresh temporary contexts, leaving the personal Chrome profile untou
 
 | Changed area | Command / focus |
 | --- | --- |
+| Graph and table error styling, themes, localization and resolution | `node AmmoGraph/tests/empty-messages.mjs` (defaults to the live server) |
+| Usability feedback, resize controls, chart help and preferences | `node AmmoGraph/tests/usability.mjs` against the separate simulation test host |
 | General page behavior | `node AmmoGraph/tests/browser.mjs` |
 | Magazine editor, armor, diagram, buckshot and graph restoration | `node AmmoGraph/tests/simulation.mjs` against the separate [simulation test host](simulation.md#implementation-and-validation) |
 | Magazine capacity, equipment across calibers, death marker, zoom/pan and restoration | `node AmmoGraph/tests/simulation-release.mjs` against the same test host |

@@ -122,7 +122,7 @@ try {
     await page.locator('[data-show-after-death]').check();
     await checkLegend();
     assert.equal(await page.locator('[data-slot="front_plate"] select').inputValue(), '656fae5f7c2d57afe200c0d7', 'Filtering preserves the displayed plate selection');
-    await page.locator('.ag-sim-legend button').filter({hasText:'Cumulative damage'}).click();
+    await page.locator('.ag-sim-legend button').filter({hasText:'Cumulative mean damage'}).click();
     await page.locator('.ag-sim-cumulative').waitFor();
     const totalBeforeLanguageChange = await page.locator('.ag-sim-cumulative').getAttribute('data-total');
     const completedBeforeLanguageChange = await page.locator('[data-simulator]').getAttribute('data-completed');
@@ -149,6 +149,8 @@ try {
     await page.locator('#ag-language').selectOption('en');
     await page.waitForFunction(() => document.querySelector('.ag-sim-heading h1')?.textContent === 'Ballistics simulator');
     const ammoPicker = page.locator('[data-middle-index="0"] .ag-ammo-picker');
+    await ammoPicker.locator('summary').scrollIntoViewIfNeeded();
+    await page.waitForTimeout(150); // Let scrolling settle before testing hover dismissal.
     await ammoPicker.locator('summary').hover();
     await page.locator('.ag-tooltip[data-open="true"] [data-tooltip-column="ArmorDamage"]').waitFor();
     await ammoPicker.locator('summary').click();
@@ -162,10 +164,10 @@ try {
     await page.locator('.ag-sim-heading').click();
     assert.ok((await page.locator('[data-total-damage]').textContent()).includes('Example total damage:'));
     assert.ok(await page.locator('.ag-sim-layer-table tbody tr').count() >= 2);
-    await page.locator('.ag-sim-legend button').filter({hasText:'Penetration rate'}).click();
+    await page.locator('.ag-sim-legend button').filter({hasText:'Penetration probability'}).click();
     await page.waitForFunction(() => !document.querySelector('.ag-sim-chance') && !document.querySelector('.ag-sim-shot circle'));
     await checkLegend();
-    await page.locator('.ag-sim-legend button').filter({hasText:'Penetration rate'}).click();
+    await page.locator('.ag-sim-legend button').filter({hasText:'Penetration probability'}).click();
     await page.locator('.ag-sim-chance').waitFor();
     await page.locator('[data-shot="30"]').click();
     await page.waitForFunction(() => document.querySelector('.ag-sim-shot-details h3')?.textContent.includes('30'));
@@ -177,11 +179,11 @@ try {
     await page.locator('[data-simulator]').screenshot({ path: path.join(root, 'artifacts/simulation-desktop.png') });
     await page.locator('.ag-sim-results').screenshot({ path: path.join(root, 'artifacts/simulation-results.png') });
     await page.emulateMedia({ colorScheme: 'light' });
-    await page.locator('.ag-sim-legend button').filter({hasText:'Cumulative damage'}).click();
+    await page.locator('.ag-sim-legend button').filter({hasText:'Cumulative mean damage'}).click();
     await page.waitForFunction(() => !document.querySelector('.ag-sim-cumulative'));
     await checkLegend();
     await page.locator('.ag-sim-results').screenshot({ path: path.join(root, 'artifacts/simulation-light.png') });
-    await page.locator('.ag-sim-legend button').filter({hasText:'Cumulative damage'}).click();
+    await page.locator('.ag-sim-legend button').filter({hasText:'Cumulative mean damage'}).click();
     await page.emulateMedia({ colorScheme: 'dark' });
 
     // Search affects the table, not the already configured magazine.

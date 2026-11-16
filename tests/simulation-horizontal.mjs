@@ -152,7 +152,7 @@ try {
     });
     await check('The HP scale stays complete while zooming the cumulative-damage series', async () => {
         await capacity(30);
-        await page.locator('.ag-sim-legend button').filter({ hasText: 'Cumulative damage' }).click();
+        await page.locator('.ag-sim-legend button').filter({ hasText: 'Cumulative mean damage' }).click();
         await page.locator('.ag-sim-cumulative').waitFor();
         const initial = await verify();
         await page.locator('[data-sim-nav="in"]').click(); await until(async () => (await state()).zoom > 1);

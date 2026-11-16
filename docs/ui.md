@@ -40,7 +40,7 @@ In the code: SVG fan members and `Select` in [AmmoGraphPage](../Web/AmmoGraphPag
 
 ![Table with ammunition names, calibers, damage, penetration, velocity, and differences from the selected reference](images/comparison-table.png)
 
-Numeric cells show the cartridge's value and, when a reference is selected, its difference from that reference. Search filters both the table and chart while the table is visible. The eye icon opens column selection; table headers control sorting.
+Numeric cells show the cartridge's value and, when a reference is selected, its difference from that reference. Search filters both the table and chart while the table is visible. The labeled eye button opens column selection; table headers control sorting. Use the handle below the table or its height slider to adjust the scroll region.
 
 In the code: `VisibleItems`, `OrderedColumns`, and `SortItems` in [AmmoGraphPage](../Web/AmmoGraphPage.razor), numeric cells in [TableValue](../Web/TableValue.razor), and column selection in [ColumnPicker](../Web/ColumnPicker.razor).
 
@@ -105,3 +105,5 @@ The diagram combines penetration rate and separate component durability lines on
 [Zoomed chart with constant-width selection and hover highlights](images/simulation-highlight-zoom.png).
 
 ![Buckshot simulation with 50% average pellet hits, shared magazine capacity, and mean and example pellet-hit counts](images/simulation-pellets.png)
+
+See [Usability improvements](usability.md) for current labeled navigation, inline errors, automatic-save feedback, settings shortcuts, and simulation chart controls. Earlier screenshots show the preceding layout.

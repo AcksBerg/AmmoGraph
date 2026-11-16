@@ -212,6 +212,9 @@ The C# contract is named `Preferences` and is defined in [AmmoGraphPage.razor](.
 | `showFilters`, `showTable`, `showDetails` | Visible page sections. |
 | `tooltipColumns`, `detailColumns`, `xColumns`, `yColumns` | Selected metrics and their order. Both axis lists are merged into a shared selection when loaded. |
 | `caliberNames` | Object mapping normalized caliber keys to personal names; `null` suppresses a mapping. |
+| `simAmmoNames` | Optional simulator shot names; missing values enable names. |
+| `tableHeight` | Optional preferred table scroll height, 160-760 px; defaults to 360. |
+| `simulationMode`, `simulator` | Existing active view and simulator draft. |
 | `legacyWholeLoad` | Optional field for migrating old buckshot selections. |
 
 `preferences.js` serializes the object as JSON, encodes it as UTF-8, then Base64. Base64 is a transport encoding. The cookie is named `spt-ammo-graph.v2`. Encoded data is split into chunks of up to 3,500 characters when necessary: the main cookie then contains `chunks:N`, and chunk cookies are named, for example, `spt-ammo-graph.v2.0`. At most eight chunks are allowed.

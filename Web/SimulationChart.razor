@@ -2,18 +2,23 @@
 @inject IJSRuntime JS
 <section data-visible-shots="@VisibleCount" data-death-shot="@Result.MeanDeathShot" class="ag-sim-results" aria-label="@Text["SimResults"]">
     <div class="ag-sim-result-heading"><h2>@Text["SimResults"]</h2><span>@Result.Runs.ToString("N0", Text.Culture) @Text["SimRuns"] · @Text["SimTotalDamage"] <strong>@Number(Result.TotalDamage) HP</strong></span></div>
+    <details class="ag-sim-help"><summary>@Text["SimChartHelp"]</summary><ul>
+        @foreach (var key in new[] { "SimHelpPenetration", "SimHelpDurability", "SimHelpDamage", "SimHelpCumulative", "SimHelpThreshold", "SimHelpSelection" }) { <li>@Text[key]</li> }
+    </ul></details>
     <div class="ag-sim-total" data-total-damage><strong>@Text["SimTotalDamage"] @Number(Result.TotalDamage) HP</strong><span>@Text["SimExampleTotal"] @Number(Result.Shots.Sum(s => s.Example.Damage)) HP</span></div>
     <div class="ag-sim-chart-controls">
         <label><input type="checkbox" data-show-after-death @bind="ShowAfterDeath" @bind:after="ClampSelection" />@Text["SimShowAfterDeath"]</label>
+        <label><input type="checkbox" data-sim-ammo-names checked="@ShowAmmoNames" @onchange="() => OnToggleAmmoNames.InvokeAsync()" />@Text["SimShowAmmoNames"]</label>
         <span class="ag-sim-death-caption">@Text["SimDeathThreshold"] (85 HP)@(Result.MeanDeathShot is { } death ? " · " + Text["SimShot"] + " " + death : "")</span>
         <div class="ag-navigation-controls"><button type="button" data-sim-nav="in" aria-label="@Text["ZoomIn"]">+</button><button type="button" data-sim-nav="out" aria-label="@Text["ZoomOut"]">−</button><button type="button" data-sim-nav="reset" aria-label="@Text["ResetView"]">↺</button></div>
     </div>
     <div class="ag-legend ag-sim-legend" aria-label="@Text["SimLegend"]">
         <button type="button" class="@(Shown("cumulative") ? "is-active" : "")" aria-pressed="@(Shown("cumulative") ? "true" : "false")" style="--caliber-color:var(--sim-layer-2)" @onclick='() => Toggle("cumulative")'><span class="ag-symbol" aria-hidden="true">Σ</span><span>@Text["SimCumulative"] (HP)</span></button>
-        <button type="button" class="@(Shown("chance") ? "is-active" : "")" aria-pressed="@(Shown("chance") ? "true" : "false")" style="--caliber-color:var(--cyan)" @onclick='() => Toggle("chance")'><span class="ag-symbol" aria-hidden="true">━</span><span>@Text["SimPenetration"]</span></button>
+        <button type="button" class="@(Shown("chance") ? "is-active" : "")" aria-pressed="@(Shown("chance") ? "true" : "false")" style="--caliber-color:var(--cyan)" @onclick='() => Toggle("chance")'><span class="ag-symbol" aria-hidden="true">━</span><span>@Text["SimPenetration"] (%)</span></button>
         @for (var i = 0; i < Result.Layers.Length; i++)
-        { var index = i; var layer = Result.Layers[index]; <button type="button" class="@(Shown(layer.Id) ? "is-active" : "")" aria-pressed="@(Shown(layer.Id) ? "true" : "false")" style="@($"--caliber-color:{Color(index)}")" @onclick="() => Toggle(layer.Id)"><span class="ag-symbol" aria-hidden="true">┄</span><span>@(layer.Locked ? Text["SimInsert"] : Text["SimPlate"]) · @Catalog.Name(layer.TemplateId, Language)</span></button> }
-        <button type="button" class="@(Shown("damage") ? "is-active" : "")" aria-pressed="@(Shown("damage") ? "true" : "false")" style="--caliber-color:var(--gold)" @onclick='() => Toggle("damage")'><span class="ag-symbol" aria-hidden="true">▮</span><span>@Text["SimDamage"] (HP)</span></button>
+        { var index = i; var layer = Result.Layers[index]; <button type="button" class="@(Shown(layer.Id) ? "is-active" : "")" aria-pressed="@(Shown(layer.Id) ? "true" : "false")" style="@($"--caliber-color:{Color(index)}")" @onclick="() => Toggle(layer.Id)"><span class="ag-symbol" aria-hidden="true">┄</span><span>@(layer.Locked ? Text["SimInsert"] : Text["SimPlate"]) · @Catalog.Name(layer.TemplateId, Language) &middot; @Text["SimDurabilityLegend"]</span></button> }
+        <button type="button" class="@(Shown("damage") ? "is-active" : "")" aria-pressed="@(Shown("damage") ? "true" : "false")" style="--caliber-color:var(--gold)" @onclick='() => Toggle("damage")'><span class="ag-symbol" aria-hidden="true">▮</span><span>@Text["SimMeanDamage"] (HP)</span></button>
+        <span class="ag-sim-threshold-legend"><svg width="24" height="12" aria-hidden="true"><line class="ag-sim-death-line" x1="0" x2="24" y1="6" y2="6" /></svg>@Text["SimThresholdLegend"]</span>
     </div>
     <div class="ag-sim-chart-scroll">
         <svg @ref="Chart" class="ag-simulation-chart" viewBox="0 0 1040 530" role="img" tabindex="0" aria-label="@Text["SimChartLabel"]" data-x-min="0.5" data-x-max="@F(VisibleCount + .5)" data-last-shot="@VisibleCount" data-damage-max="@F(DamageMaximum)" data-language="@Language" data-revision="@Revision">
@@ -52,6 +57,12 @@
             @if (Result.MeanDeathShot is { } deathShot)
             {
                 <line class="ag-sim-death-line" data-death-line="@deathShot" x1="@F(X(deathShot))" x2="@F(X(deathShot))" y1="70" y2="430"><title>@Text["SimDeathThreshold"] · @Text["SimShot"] @deathShot · 85 HP</title></line>
+            }
+            @if (ShowAmmoNames)
+            {
+                <g class="ag-sim-ammo-labels" aria-hidden="true">
+                    @foreach (var shot in DisplayShots) { <g><text class="ag-sim-ammo-name" data-name="@AmmoName(shot.AmmoId)" x="@F(X(shot.Shot))" y="@F(Shown("damage") ? Math.Max(84, 422 - shot.Damage / DamageMaximum * 360) : 415)" text-anchor="middle">@AmmoName(shot.AmmoId)</text></g> }
+                </g>
             }
             <g @onkeydown="Navigate">
             @foreach (var shot in DisplayShots)
@@ -97,6 +108,8 @@
     [Parameter] public AmmoEntry[] Ammo { get; set; } = [];
     [Parameter] public UiText Text { get; set; } = null!;
     [Parameter] public string Language { get; set; } = "en";
+    [Parameter] public bool ShowAmmoNames { get; set; } = true;
+    [Parameter] public EventCallback OnToggleAmmoNames { get; set; }
     private int SelectedShot = 1;
     private bool ShowAfterDeath;
     private int VisibleCount => ShowAfterDeath ? Result.Shots.Length : Result.MeanDeathShot ?? Result.Shots.Length;
@@ -118,7 +131,7 @@
     {
         try
         {
-            Module ??= await JS.InvokeAsync<IJSObjectReference>("import", "/ammo-graph/simulation-navigation.js?v=24.3");
+            Module ??= await JS.InvokeAsync<IJSObjectReference>("import", "/ammo-graph/simulation-navigation.js?v=26.1");
             await Module.InvokeVoidAsync("sync", Chart);
         }
         catch (JSDisconnectedException) { }

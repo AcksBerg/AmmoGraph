@@ -1,6 +1,6 @@
 ﻿# Usage and configuration
 
-Use the header cartridge button to open the [ballistics simulator](simulation.md), or the graph button to return to ammunition comparison. It runs with the SPT server alone and displays its model assumptions beside the configuration.
+Use the labeled header cartridge button to open the [ballistics simulator](simulation.md), or the graph button to return to ammunition comparison. It runs with the SPT server alone and displays its model assumptions beside the configuration.
 
 AmmoGraph is a server mod with a Blazor interface at `/AmmoGraph`, compatible with **SPT 4.1.4 and later / .NET 10**. It has been tested in clean and modded installations; the local development installation uses SPT 4.1.6. The page displays ammunition data from that server instance without a Python export, Realism file parser, or separate web server.
 
@@ -252,3 +252,5 @@ The attribute-transfer check covers individual/bulk actions, mouse drag between 
 ## Credits
 
 Continues the idea behind [SPTRealismAmmoGraph](https://github.com/AcksBerg/SPTRealismAmmoGraph). Assemblies from the existing SPT installation remain external build requirements.
+
+See [Usability improvements](usability.md) for automatic-save feedback, table resizing, graph-name defaults, and chart help.

@@ -5,8 +5,10 @@
     <details class="ag-sim-assumptions"><summary>@Text["SimModelDetails"]</summary><p>@Text["SimAssumptions"]</p></details>
     <fieldset class="ag-sim-configuration">
         <legend class="ag-sr-only">@Text["SimConfiguration"]</legend>
-        <section class="ag-magazine-editor">
+        <section class="ag-magazine-editor" aria-describedby="@(RecipeError is null ? null : "ag-magazine-error")">
             <h2>@Text["SimMagazine"]</h2>
+            @if (RecipeError is { } recipeError) { <p id="ag-magazine-error" class="ag-error ag-sim-error" role="alert">@Text[recipeError]</p> }
+            @if (Error is not null && !ArmorError && ErrorKey != RecipeError) { <p class="ag-error ag-sim-error" role="alert">@Error</p> }
             <label class="ag-magazine-capacity">@Text["SimMagazineSize"]<input data-magazine-capacity type="number" min="1" max="100" step="1" @bind:get="Draft.Magazine.Capacity" @bind:set="SetCapacity" /></label>
             @if (HasPellets)
             {
@@ -65,6 +67,7 @@
                     </div>
                 }
             }
+            @if (Error is not null && ArmorError) { <p class="ag-error ag-sim-error" role="alert">@Error</p> }
         </section>
     </fieldset>
     <details class="ag-magazine-preview" aria-label="@Text["SimPreview"]">
@@ -80,11 +83,11 @@
         @if (Running) { <progress max="100" value="@Progress" aria-label="@Text["SimProgress"]"></progress><span role="status">@Progress %</span> }
         @if (Preview is null) { <span>@Text["SimInvalidMagazine"]</span> }
     </div>
-    @if (Error is not null) { <p class="ag-sim-error" role="alert">@Error</p> }
+
     @if (Result is { } result)
     {
         @if (IsStale) { <p class="ag-sim-stale" role="status">@Text["SimStale"]</p> }
-        <SimulationChart Result="result" Catalog="Catalog" Ammo="Ammo" Text="Text" Language="@Language" />
+        <SimulationChart Result="result" Catalog="Catalog" Ammo="Ammo" Text="Text" Language="@Language" ShowAmmoNames="ShowAmmoNames" OnToggleAmmoNames="OnToggleAmmoNames" />
     }
 </section>
 @code {
@@ -94,6 +97,8 @@
     [Parameter] public AmmoEntry[] Ammo { get; set; } = [];
     [Parameter] public UiText Text { get; set; } = null!;
     [Parameter] public string Language { get; set; } = "en";
+    [Parameter] public bool ShowAmmoNames { get; set; } = true;
+    [Parameter] public EventCallback OnToggleAmmoNames { get; set; }
     [Parameter] public EventCallback OnChanged { get; set; }
     [Parameter] public EventCallback<string> OnAmmoHover { get; set; }
     private SimulatorDraft Draft => Workspace.Get(CaliberId);
@@ -146,7 +151,11 @@
         || slot.BodyColliders.Any(SimulationCatalog.ZoneBodies(Draft.Zone).Contains);
     private bool Running, _disposed;
     private int Progress, Completed;
-    private string? ErrorKey, ErrorDetail;
+    private readonly Dictionary<string, (string Key, string? Detail)> Errors = [];
+    private string? ErrorKey => Errors.TryGetValue(CaliberId, out var error) ? error.Key : null;
+    private string? ErrorDetail => Errors.TryGetValue(CaliberId, out var error) ? error.Detail : null;
+    private bool ArmorError => ErrorKey is "SimMissingArmor" or "SimMissingArmorData" or "SimRequiredInsert" or "SimIncompatiblePlate" or "SimUnsupportedCollider";
+    private string? RecipeError { get { try { var sequence = Draft.Magazine.Expand(); return sequence.All(id => Ammo.Any(a => a.TemplateId == id)) ? null : "SimExcludedAmmo"; } catch (SimulationException ex) { return ex.Key; } } }
     private string? Error => ErrorKey is null ? null : Text[ErrorKey] + (ErrorDetail is null ? "" : " · " + ErrorDetail);
     private CancellationTokenSource? _cancellation;
     private string[]? Preview { get { try { return Draft.Magazine.Expand(); } catch (SimulationException) { return null; } } }
@@ -158,7 +167,7 @@
         ? $"{Text["SimClass"]} {p.Class} · {MaterialName(p.Material)} · {p.Maximum.ToString("0.#", Text.Culture)} / {p.Maximum.ToString("0.#", Text.Culture)}" : Text["SimMissingArmor"];
     private async Task Change(SimulatorDraft draft)
     {
-        Cancel(); Workspace.Update(draft); ErrorKey = null; ErrorDetail = null;
+        Cancel(); Workspace.Update(draft);
         await OnChanged.InvokeAsync();
         Schedule();
     }
@@ -178,6 +187,12 @@
         if (other < 0 || other >= blocks.Length) return Task.CompletedTask;
         (blocks[index], blocks[other]) = (blocks[other], blocks[index]); return SetRecipe(Draft.Magazine with { Middle = blocks });
     }
+    public bool ContainsAmmo(string id) => Draft.Magazine.Start?.TemplateId == id || Draft.Magazine.End?.TemplateId == id || Draft.Magazine.Middle.Any(b => b.TemplateId == id);
+    public Task RemoveAmmo(string id) => SetRecipe(Draft.Magazine with {
+        Start = Draft.Magazine.Start?.TemplateId == id ? null : Draft.Magazine.Start,
+        End = Draft.Magazine.End?.TemplateId == id ? null : Draft.Magazine.End,
+        Middle = Draft.Magazine.Middle.Where(b => b.TemplateId != id).ToArray()
+    });
     public Task AddAmmo(string id, string section)
     {
         if (!Ammo.Any(a => a.TemplateId == id)) return Task.CompletedTask;
@@ -200,8 +215,8 @@
     private async Task Run(CancellationToken token)
     {
         if (Running) return;
-        if (!RecipeAllowed) { ErrorKey = "SimExcludedAmmo"; ErrorDetail = null; return; }
-        Running = true; Progress = 0; ErrorKey = null; ErrorDetail = null; StateHasChanged();
+        if (!RecipeAllowed) { Errors[CaliberId] = ("SimExcludedAmmo", null); return; }
+        Running = true; Progress = 0; StateHasChanged();
         var draft = Draft with { Magazine = Draft.Magazine with { Middle = Draft.Magazine.Middle.ToArray() }, Slots = new(Draft.Slots) };
         var key = CaliberId;
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(token); _cancellation = cancellation;
@@ -209,11 +224,11 @@
         try
         {
             var result = await Task.Run(() => BallisticsEngine.Run(Catalog, new(draft), progress, cancellation.Token));
-            if (!_disposed && !cancellation.IsCancellationRequested && Fingerprint(Draft) == Fingerprint(draft)) { Workspace.Results[key] = result; Completed++; }
+            if (!_disposed && !cancellation.IsCancellationRequested && Fingerprint(Draft) == Fingerprint(draft)) { Workspace.Results[key] = result; Completed++; Errors.Remove(key); }
         }
         catch (OperationCanceledException) { }
-        catch (SimulationException ex) { if (!_disposed) { ErrorKey = ex.Key; ErrorDetail = ex.Message != ex.Key ? ex.Message : null; } }
-        catch (Exception ex) { Logger.LogError(ex, "AmmoGraph simulation failed"); if (!_disposed) ErrorKey = "SimFailed"; }
+        catch (SimulationException ex) { if (!_disposed) { Errors[key] = (ex.Key, ex.Message != ex.Key ? ex.Message : null); } }
+        catch (Exception ex) { Logger.LogError(ex, "AmmoGraph simulation failed"); if (!_disposed) Errors[key] = ("SimFailed", null); }
         finally { Running = false; _cancellation = null; }
     }
     public void Dispose() { _disposed = true; Cancel(); _debounce?.Cancel(); }

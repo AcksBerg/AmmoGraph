@@ -1,4 +1,6 @@
+import { bindUsability, unbindUsability } from './usability.js?v=26.1';
 const key = 'spt-ammo-graph.v2';
+const saveOwner = Symbol('ammo-graph-preferences');
 const legacyKey = 'spt-ammo-graph.preferences.v1';
 const options = `; Path=/; Max-Age=31536000; SameSite=Lax${location.protocol === 'https:' ? '; Secure' : ''}`;
 const read = name => document.cookie.split('; ').find(c => c.startsWith(name + '='))?.slice(name.length + 1);
@@ -23,7 +25,8 @@ function valid(value) {
         && ['language', 'search', 'caliberSearch', 'sortKey'].every(k => typeof value[k] === 'string')
         && (value.selectedId === null || typeof value.selectedId === 'string')
         && ['columns', 'excludedCalibers', 'excludedAmmo', 'includedDefaultAmmo', 'includedDefaultCalibers', 'tooltipColumns', 'detailColumns', 'xColumns', 'yColumns'].every(k => value[k] == null || (Array.isArray(value[k]) && value[k].every(s => typeof s === 'string')))
-        && ['showFilters', 'showTable', 'showDetails'].every(k => value[k] == null || typeof value[k] === 'boolean')
+        && ['showFilters', 'showTable', 'showDetails', 'simAmmoNames'].every(k => value[k] == null || typeof value[k] === 'boolean')
+        && (value.tableHeight == null || (Number.isInteger(value.tableHeight) && value.tableHeight >= 160 && value.tableHeight <= 760))
         && (value.theme == null || ['system', 'light', 'dark'].includes(value.theme))
         && (value.simulationMode == null || typeof value.simulationMode === 'boolean')
         && validSimulator(value.simulator)
@@ -59,15 +62,51 @@ export function save(value) {
             chunks.forEach((chunk, i) => { document.cookie = `${key}.${i}=${chunk}${options}`; });
             document.cookie = `${key}=chunks:${chunks.length}${options}`;
         }
-        const saved = read(key) === (chunks.length === 1 ? encoded : `chunks:${chunks.length}`);
-        if (saved) localStorage.removeItem(legacyKey);
+        const saved = read(key) === (chunks.length === 1 ? encoded : `chunks:${chunks.length}`)
+            && chunks.every((chunk, i) => chunks.length === 1 || read(`${key}.${i}`) === chunk);
+        if (saved) {
+            localStorage.removeItem(legacyKey);
+            window.dispatchEvent(new CustomEvent('ag-preferences-saved', { detail: { owner: saveOwner, value } }));
+        }
         return saved;
     } catch { return false; }
 }
 
+// Coalesce rapid interactions. Applied feedback is immediate; saved feedback waits
+// for the browser to confirm every cookie chunk. Failed persistence stays visible.
+let saveTimer, statusTimer, latestPreferences;
+function feedbackSaved(saved, announce) {
+    const status = document.querySelector('[data-save-status]');
+    const error = document.querySelector('[data-save-error]');
+    if (error) error.hidden = saved;
+    if (status) {
+        status.textContent = saved && announce ? status.dataset.saved : '';
+        clearTimeout(statusTimer);
+        if (saved && announce) statusTimer = setTimeout(() => { status.textContent = ''; }, 2500);
+    }
+}
+export function saveInitial(value) { latestPreferences = value; feedbackSaved(save(value), false); }
+export function saveApplied(value) {
+    latestPreferences = value;
+    clearTimeout(saveTimer); clearTimeout(statusTimer);
+    const status = document.querySelector('[data-save-status]');
+    if (status) status.textContent = status.dataset.applied;
+    saveTimer = setTimeout(() => { saveTimer = undefined; feedbackSaved(save(latestPreferences), true); }, 450);
+}
+// An explicit write from another loaded module supersedes a queued UI save.
+function externalSave(event) {
+    if (event.detail.owner === saveOwner) return;
+    clearTimeout(saveTimer); saveTimer = undefined;
+    latestPreferences = event.detail.value;
+    feedbackSaved(true, false);
+}
+function retrySave(event) { if (event.target.closest?.('[data-retry-save]') && latestPreferences) saveApplied(latestPreferences); }
+// Flush the latest applied state when navigating away during the debounce window.
+function flushSave() { if (saveTimer && latestPreferences) { clearTimeout(saveTimer); saveTimer = undefined; save(latestPreferences); } }
 let menuCleanup;
 export function bindMenus() {
     unbindMenus();
+    bindUsability();
     const root = document.querySelector('.ag-app');
     if (!root) return;
     function closeOutside(event) {
@@ -110,16 +149,19 @@ export function bindMenus() {
         if (event.key === 'End') index = choices.length - 1;
         choices[index].focus(); choices[index].scrollIntoView({block:'nearest'});
     }
+    document.addEventListener('click', retrySave);
+    window.addEventListener('pagehide', flushSave);
+    window.addEventListener('ag-preferences-saved', externalSave);
     document.addEventListener('keydown', ammoKeys);
     document.addEventListener('click', chooseAmmo);
     document.addEventListener('pointerdown', closeOutside);
     document.addEventListener('keydown', escape);
     root.addEventListener('toggle', positionMenu, true);
     window.addEventListener('resize', positionMenu);
-    menuCleanup = () => { document.removeEventListener('keydown', ammoKeys); document.removeEventListener('click', chooseAmmo); document.removeEventListener('pointerdown', closeOutside); document.removeEventListener('keydown', escape); root.removeEventListener('toggle', positionMenu, true); window.removeEventListener('resize', positionMenu); };
+    menuCleanup = () => { flushSave(); clearTimeout(statusTimer); document.removeEventListener('click', retrySave); window.removeEventListener('pagehide', flushSave); window.removeEventListener('ag-preferences-saved', externalSave); document.removeEventListener('keydown', ammoKeys); document.removeEventListener('click', chooseAmmo); document.removeEventListener('pointerdown', closeOutside); document.removeEventListener('keydown', escape); root.removeEventListener('toggle', positionMenu, true); window.removeEventListener('resize', positionMenu); };
 }
-export function unbindMenus() { menuCleanup?.(); menuCleanup = undefined; }
-export { syncChart, destroyChart } from './navigation.js?v=22';
+export function unbindMenus() { unbindUsability(); menuCleanup?.(); menuCleanup = undefined; }
+export { syncChart, destroyChart } from './navigation.js?v=26.1';
 export { bindPresentation, syncPresentation, unbindPresentation, oppositeTheme } from './presentation.js?v=23.3';
 export { syncFans, destroyFans } from './spiderfy.js?v=22.1';
 

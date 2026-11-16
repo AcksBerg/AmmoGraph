@@ -127,6 +127,11 @@ public sealed class UiText(string language)
         foreach (var translation in simulation.RootElement.EnumerateObject())
             foreach (var entry in translation.Value.EnumerateObject())
                 result[translation.Name][entry.Name] = entry.Value.GetString()!;
+        using var usabilityStream = typeof(UiText).Assembly.GetManifestResourceStream("AmmoGraph.Resources.usability.json")!;
+        using var usability = JsonDocument.Parse(usabilityStream);
+        foreach (var translation in usability.RootElement.EnumerateObject())
+            foreach (var entry in translation.Value.EnumerateObject())
+                result[translation.Name][entry.Name] = entry.Value.GetString()!;
         return result;
     }
 }

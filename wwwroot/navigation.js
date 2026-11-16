@@ -73,6 +73,17 @@ function create(svg, previous) {
             point.node.setAttribute('transform', `translate(${x - point.baseX} ${y - point.baseY})`);
             point.node.style.visibility = inside({ x, y }) ? '' : 'hidden';
         }
+        const occupied = [];
+        const labels = [...svg.querySelectorAll('.ag-point .ag-point-name')].sort((a, b) => Number(!!b.closest('.is-selected')) - Number(!!a.closest('.is-selected')));
+        for (const label of labels) {
+            label.style.display = '';
+            const point = label.closest('.ag-point');
+            if (point.style.visibility === 'hidden' || point.hasAttribute('data-expanded')) continue;
+            const box = label.getBoundingClientRect();
+            const overlap = occupied.some(b => box.left < b.right + 4 && box.right + 4 > b.left && box.top < b.bottom + 3 && box.bottom + 3 > b.top);
+            if (overlap && !point.classList.contains('is-selected')) label.style.display = 'none';
+            else occupied.push(box);
+        }
         panel.querySelector('[data-nav="out"]').disabled = minimumZoom;
         panel.querySelector('[data-nav="reset"]').disabled = home;
         panel.querySelector('[data-nav="in"]').disabled = k >= 100 - 1e-8 || points.length === 0;
@@ -155,6 +166,7 @@ function create(svg, previous) {
         } else return;
         event.preventDefault();
     }
+    window.addEventListener('resize', redraw);
     svg.addEventListener('wheel', wheel, { passive: false }); svg.addEventListener('pointerdown', down);
     window.addEventListener('pointermove', move, { passive: false }); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
     svg.addEventListener('click', suppressClick, true); svg.addEventListener('keydown', key); panel.addEventListener('click', action);
@@ -174,6 +186,7 @@ function create(svg, previous) {
         state: () => ({ view, signature }),
         destroy() {
             cancelAnimationFrame(frame);
+            window.removeEventListener('resize', redraw);
             svg.removeEventListener('wheel', wheel); svg.removeEventListener('pointerdown', down);
             window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up);
             svg.removeEventListener('click', suppressClick, true); svg.removeEventListener('keydown', key); panel.removeEventListener('click', action);

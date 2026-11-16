@@ -1,14 +1,21 @@
 <details class="ag-exclusions ag-icon-menu">
-    <summary aria-label="@Text["Settings"]" title="@Text["Settings"]" aria-controls="ag-exclusion-panel" aria-haspopup="dialog"><MenuIcon /></summary>
+    <summary aria-label="@Text["Settings"]" title="@Text["Settings"]" aria-controls="ag-exclusion-panel" aria-haspopup="dialog"><MenuIcon /><span>@Text["Settings"]</span></summary>
     <section class="ag-menu-panel ag-exclusion-panel" id="ag-exclusion-panel" role="dialog" aria-labelledby="ag-settings-title">
     <h2 id="ag-settings-title">@Text["Settings"]</h2>
-    <details class="ag-settings-section" name="ag-settings" data-settings-section="view"><summary>@Text["View"]</summary><div class="ag-view-options">
+    <p class="ag-settings-hint">@Text["SettingsAutomatic"]</p>
+    <nav class="ag-settings-categories" aria-label="@Text["SettingsCategories"]">
+        <button type="button" data-open-settings="view">@Text["View"]</button>
+        <button type="button" data-open-settings="attributes">@Text["GraphAttributes"]</button>
+        <button type="button" data-open-settings="caliber-names">@Text["CaliberNames"]</button>
+        <button type="button" data-open-settings="exclusions">@Text["Exclusions"]</button>
+    </nav>
+    <details class="ag-settings-section" name="ag-settings" data-settings-section="view"><summary>@Text["View"]<small>@Text["SettingsViewHint"]</small></summary><div class="ag-view-options">
         <label><input id="ag-show-filters" type="checkbox" checked="@ShowFilters" @onchange="OnToggleFilters" />@Text["ShowFilters"]</label>
         <label><input id="ag-show-table" type="checkbox" checked="@ShowTable" @onchange="OnToggleTable" />@Text["ShowTable"]</label>
         <label><input id="ag-show-details" type="checkbox" checked="@ShowDetails" @onchange="OnToggleDetails" />@Text["ShowDetails"]</label>
     </div></details>
     @ChildContent
-    <details class="ag-settings-section" name="ag-settings" data-settings-section="exclusions"><summary id="ag-exclusion-title">@Text["Exclusions"] <span class="ag-count">@(ExcludedCalibers.Count + ExcludedAmmo.Count)</span></summary>
+    <details class="ag-settings-section" name="ag-settings" data-settings-section="exclusions"><summary id="ag-exclusion-title">@Text["Exclusions"] <span class="ag-count">@(ExcludedCalibers.Count + ExcludedAmmo.Count)</span><small>@Text["SettingsExclusionsHint"]</small></summary>
     <div class="ag-exclusion-toolbar">
         <input class="ag-input" aria-label="@Text["FilterSearch"]" placeholder="@Text["FilterSearch"]" maxlength="128" @bind="Search" @bind:event="oninput" />
         <button type="button" class="ag-show-all" @onclick="OnShowAll">@Text["ShowAll"]</button>

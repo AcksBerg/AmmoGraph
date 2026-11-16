@@ -1170,3 +1170,58 @@ the surrounding SPT web panel is unchanged. */
     .ag-view-options label { display:flex; }
     .ag-chart .ag-hit-area { r:25; }
 }
+
+/* Usability feedback: errors remain distinct from warnings in both themes. */
+.ag-app .ag-error { color:#ffb4b4; background:#421e24; border:1px solid #f47171; border-inline-start:4px solid #ff7070; border-radius:7px; padding:10px 12px; font-size:13px; font-weight:600; line-height:1.6; overflow-wrap:anywhere; }
+.ag-app[data-theme=light] .ag-error { color:#9c1624; background:#fff0f1; border-color:#b42336; }
+@media(prefers-color-scheme:light) { .ag-app:not([data-theme=dark]) .ag-error { color:#9c1624; background:#fff0f1; border-color:#b42336; } }
+.ag-magazine-editor>.ag-error,.ag-armor-editor>.ag-error { margin:10px 0; }
+.ag-preference-feedback { position:fixed; bottom:16px; inset-inline-end:16px; z-index:60; pointer-events:none; width:fit-content; max-width:calc(100% - 24px); }
+.ag-preference-feedback [data-save-status]:not(:empty) { display:block; padding:7px 12px; border:1px solid var(--cyan); background:var(--panel); color:var(--text); border-radius:7px; font-size:12px; box-shadow:0 3px 14px #0003; }
+.ag-preference-error { margin:6px 0; max-width:620px; pointer-events:auto; }
+.ag-preference-error[hidden] { display:none; }
+.ag-app .ag-preference-error button { color:inherit; text-decoration:underline; }
+.ag-sim-help { font-size:12px; line-height:1.65; margin:10px 0; }
+.ag-sim-help>summary { cursor:pointer; color:var(--cyan); width:fit-content; padding:7px 0; font-weight:600; }
+.ag-sim-help ul { margin:4px 0; padding-inline-start:20px; max-width:85ch; }
+.ag-sim-help li { margin:6px 0; }
+.ag-sim-threshold-legend { display:flex; align-items:center; gap:8px; padding:8px 10px; font-size:12px; }
+.ag-sim-threshold-legend svg { flex:none; }
+.ag-simulation-chart .ag-sim-ammo-name { fill:var(--text); font-size:11px; stroke:var(--panel); stroke-width:3px; paint-order:stroke; pointer-events:none; }
+
+/* Labels stay visible on compact layouts; categories retain their accordions. */
+.ag-app .ag-view-toggle { width:auto; height:auto; min-height:36px; gap:7px; padding:7px 10px; font-size:12px; }
+.ag-view-toggle svg { width:20px; height:20px; flex:none; }
+.ag-app .ag-column-picker>summary,.ag-app .ag-exclusions>summary { width:auto; padding:7px 10px; gap:7px; }
+.ag-app .ag-icon-menu>summary svg { flex:none; }
+.ag-settings-section>summary small { display:block; padding-inline-start:16px; color:var(--muted); font-size:11px; font-weight:400; }
+.ag-settings-section[open]>summary { background:var(--theme-selected,#2d4149); color:var(--cyan); border-inline-start:3px solid var(--cyan); }
+.ag-settings-categories { display:flex; flex-wrap:wrap; gap:6px; padding:12px 0; }
+.ag-app .ag-settings-categories button { font-size:12px; padding:6px 9px; }
+.ag-app .ag-settings-categories button[aria-pressed=true] { color:var(--cyan); border-color:var(--cyan); }
+.ag-app .ag-attribute-shortcut { font-size:12px; padding:5px 8px; }
+.ag-table-panel>#ag-ammunition-table { height:min(var(--ag-table-height,360px),max(160px,65dvh)); max-height:none; min-height:160px; }
+.ag-table-resize { height:20px; display:flex; align-items:center; justify-content:center; cursor:ns-resize; touch-action:none; border-top:1px solid var(--line); }
+.ag-table-resize>span { width:48px; height:5px; border-block:1px solid var(--muted); }
+.ag-table-resize:is(:hover,:focus-visible) { background:var(--raised); }
+.ag-table-height { display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:10px; padding:4px 16px 12px; color:var(--muted); font-size:12px; }
+.ag-table-height input { width:130px; accent-color:var(--cyan); }
+.ag-table-height output { min-width:48px; font-variant-numeric:tabular-nums; }
+.ag-app .ag-sim-table-actions { min-width:180px; }
+@media(max-width:1180px) {
+    .ag-app .ag-header { height:auto; min-height:88px; gap:10px; flex-wrap:wrap; padding-block:12px; }
+    .ag-header-actions { flex-wrap:wrap; justify-content:flex-end; }
+}
+@media(max-width:600px) {
+    .ag-app .ag-header { height:auto!important; min-height:75px; padding-block:10px!important; }
+    .ag-app .ag-header-actions { width:100%; justify-content:space-between; flex-wrap:wrap; gap:6px!important; }
+    .ag-app .ag-view-toggle { width:auto; max-width:170px; height:auto; font-size:11px; }
+    .ag-app .ag-column-picker>summary,.ag-app .ag-exclusions>summary { width:auto; font-size:11px; }
+    .ag-app .ag-icon-menu .ag-menu-panel { top:12px; max-height:calc(100dvh - 24px); }
+}
+
+.ag-app .ag-exclusions>.ag-menu-panel { position:fixed; inset-inline:12px; margin-inline:auto; top:min(140px,15dvh); bottom:auto; width:min(760px,calc(100vw - 24px)); max-height:calc(85dvh - 12px); }
+
+.ag-app .ag-simulator input:invalid { border-color:#f47171; outline:1px solid #f47171; }
+
+.ag-app .ag-table-empty { margin:12px 16px; text-align:start; }

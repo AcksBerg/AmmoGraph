@@ -1,12 +1,13 @@
 <details class="ag-settings-section ag-caliber-names" name="ag-settings" data-settings-section="caliber-names">
-    <summary>@Text["CaliberNames"]</summary>
+    <summary>@Text["CaliberNames"]<small>@Text["SettingsNamesHint"]</small></summary>
     <p class="ag-settings-hint">@Text["PersonalNamesHint"]</p>
     <div class="ag-name-form">
         <label>@Text["Calibers"]<select id="ag-name-caliber" disabled="@Busy" @bind="CaliberId" @bind:after="SelectCaliber">@foreach (var c in Choices) { <option value="@c.Id">@c.Name · @c.Id</option> }</select></label>
         <label>@Text["CaliberName"]<input id="ag-name-value" class="ag-input" maxlength="128" @bind="Name" @bind:event="oninput" disabled="@Busy" /></label>
         <div class="ag-name-actions"><button type="button" class="ag-save-caliber-name" disabled="@(Busy || CaliberId.Length == 0 || string.IsNullOrWhiteSpace(Name))" @onclick="() => Save(false)">@Text["SaveName"]</button><button type="button" class="ag-delete-caliber-name" disabled="@(Busy || CaliberId.Length == 0 || !Names.ContainsKey(CaliberNameMap.Normalize(CaliberId)))" @onclick="() => Save(true)">@Text["DeleteName"]</button><button type="button" class="ag-reset-caliber-names" disabled="@Busy" @onclick="Reset">@Text["RestoreDefaults"]</button></div>
     </div>
-    <p class="ag-name-status" role="status">@Message</p>
+    @if (MessageKey == "NameSaveFailed") { <p class="ag-error" role="alert">@Message</p> }
+    else { <p class="ag-name-status" role="status">@Message</p> }
     <div class="ag-name-list">
         @foreach (var c in Choices.Where(c => Names.ContainsKey(CaliberNameMap.Normalize(c.Id))))
         {

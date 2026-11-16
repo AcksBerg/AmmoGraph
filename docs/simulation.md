@@ -53,10 +53,10 @@ A vertical red line marks the first shot at which **cumulative mean immediate da
 Use the mouse wheel to zoom horizontally around the pointer and drag to pan along the shot axis. The +/− buttons zoom around the center; reset or Home restores the full visible range. With the chart focused, +/− zoom and Left/Right pan. Both vertical scales always remain fully visible. Shot labels start at **1**, with half a shot interval of space before the first bar and after the last. This keeps edge bars and the kill marker fully inside the plot. Panning is bounded by that padded range, without additional overscroll. Hover and selection highlights retain their unzoomed screen width; the full enlarged bar remains interactive. Focus an individual shot to select it or navigate between shots. Zoom and pan update locally in the browser; they are preserved when selecting a shot, and reset when the data, displayed range, axes, or language changes.
 
 - X-axis: actual shot number, starting at 1. Durability series show the values after each shot; initial durability remains available in the example's before/after details.
-- Left Y-axis: penetration rate and each component's remaining durability, as a percentage of its original maximum.
+- Left Y-axis: penetration probability and each component's remaining durability, as a percentage of its original maximum.
 - Right Y-axis: mean immediate body damage per shot in HP, including blunt damage. Total mean magazine damage appears above the diagram.
 
-Penetration rate is the fraction of magazines in which at least one hitting projectile from that cartridge passes the modeled protection and reaches the body. Blunt damage alone does not count. Hitting buckshot pellets strike the same zone and affect armor separately; missed pellets do not affect armor or damage.
+Penetration probability is the fraction of magazines in which at least one hitting projectile from that cartridge passes the modeled protection and reaches the body. Blunt damage alone does not count. Hitting buckshot pellets strike the same zone and affect armor separately; missed pellets do not affect armor or damage.
 
 Click or focus a shot marker, or use the previous/next controls. Details show the statistical mean and one actual example run, including the blocking component, damage and durability before/after the shot. Legend buttons hide or show series.
 
@@ -115,3 +115,5 @@ node AmmoGraph/tests/simulation.mjs
 ```
 
 Its default address is `http://127.0.0.1:6973/AmmoGraph`. `AMMOGRAPH_TEST_URL` changes the host binding; `AMMOGRAPH_URL` changes the browser test target. The test host is excluded from the shipped mod. Test screenshots and logs go into `artifacts`.
+
+See [Usability improvements](usability.md#simulation-diagram) for chart explanations, the threshold legend, optional shot names, and table controls.
