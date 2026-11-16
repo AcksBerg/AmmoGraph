@@ -92,15 +92,30 @@ Inspect the generated images for loaded data, readable labels, the correct menu 
 
 ### Shots to Kill screenshots
 
-Build and start the separate [simulation test host](simulation.md#implementation-and-validation). It reads the local SPT dataset and exposes the read-only fixture endpoint needed by the capture script. It is not installed into SPT or included in releases.
+The screenshot script reads metrics, calibers and actual successful/capped values from the rendered live page. It does not require a test endpoint or a separate test host. The functional `shots-to-kill.mjs` test still requires the separate [simulation test host](simulation.md#implementation-and-validation).
 
 ```powershell
-$env:AMMOGRAPH_URL = 'http://127.0.0.1:6973/AmmoGraph'
-node AmmoGraph/tests/shots-to-kill.mjs
+$env:AMMOGRAPH_URL = 'https://localhost:6969/AmmoGraph'
 node AmmoGraph/tests/screenshots-shots-to-kill.mjs
 ```
 
-The screenshot script writes `shots-to-kill-graph.png`, `shots-to-kill-table.png` and `shots-to-kill-attributes.png` into `docs/images`. It selects the highest eligible reference class and calibers containing successful and capped outcomes from the actual loaded data, with a fresh English browser context. The dataset must provide both outcomes. Inspect all three images before committing documentation.
+The screenshot script writes `shots-to-kill-graph.png`, `shots-to-kill-table.png` and `shots-to-kill-attributes.png` into `docs/images`. It selects the highest eligible reference class and calibers containing successful and capped outcomes from the actual loaded data, with a fresh English browser context. The dataset must provide both outcomes. It temporarily includes default-hidden entries only within that isolated browser context. Inspect all three images before committing documentation.
+
+### Recreating all documentation screenshots on the live server
+
+With the installed SPT server running, execute these commands from the shared workspace:
+
+```powershell
+$env:AMMOGRAPH_URL = 'https://localhost:6969/AmmoGraph'
+node AmmoGraph/tests/screenshots.mjs
+node AmmoGraph/tests/screenshots-header.mjs
+node AmmoGraph/tests/screenshots-shots-to-kill.mjs
+node AmmoGraph/tests/screenshots-simulator.mjs
+```
+
+Together these recreate all 19 PNG images in `docs/images`: eight general views, two header themes, three Shots to Kill views, four simulator views and two usability views. Each script uses a fresh English browser context. General, Shots to Kill and simulator captures wait for transient automatic-save notifications to clear. Simulator captures show real 2,000-run results, the configured carrier and front plate, a zoomed selection, contextual help with readable ammunition names, and buckshot at 50% mean pellet hits. The simulator script requires the standard 5.45x39 and 12/70 calibers, Ars Arma CPC MOD.1 carrier and GAC 3s15m front plate present in the test installation.
+
+The full image set was recreated from the live SPT server running AmmoGraph **0.25.5** on **2026-11-16**. The normal browser profile and installed configuration files are not changed by these capture scripts.
 
 ## Keeping documentation current
 

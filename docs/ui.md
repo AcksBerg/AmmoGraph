@@ -2,7 +2,7 @@
 
 [Project overview](../README.md) · [Usage](usage.md) · [Developer guide](development.md)
 
-These screenshots were captured from the running local application using a separate temporary browser profile. They show the English interface in the dark theme. Available ammunition, values, and calibers depend on the installed mods. See [documentation maintenance](testing.md#updating-screenshots) to regenerate them.
+These screenshots were recreated on 2026-11-16 from the live SPT server running AmmoGraph 0.25.5, using separate temporary browser contexts. They show the English interface in the dark theme, with both themes shown for the header. Available ammunition, values, and calibers depend on the installed mods. See [documentation maintenance](testing.md#updating-screenshots) to regenerate all 19 images.
 
 ## Overview
 

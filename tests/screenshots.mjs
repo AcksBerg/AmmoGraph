@@ -22,6 +22,7 @@ try {
     await page.locator('[data-detail="Name"]').waitFor();
     // Wait for fonts and two painted frames before each capture.
     const capture = async (name, locator = page) => {
+        await page.waitForFunction(() => !document.querySelector('[data-save-status]')?.textContent.trim());
         await page.evaluate(async () => {
             await document.fonts.ready;
             await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));

@@ -1,4 +1,4 @@
-// Run against tests/SimulationHost; fixture values choose representative real results.
+// Capture real rendered values from the live server; no test-only endpoint is needed.
 import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
@@ -14,18 +14,39 @@ try {
     const context = await browser.newContext({ ignoreHTTPSErrors: true,
         viewport: { width: 1600, height: 1100 }, colorScheme: 'dark', locale: 'en-US' });
     const page = await context.newPage();
-    const url = process.env.AMMOGRAPH_URL || 'http://127.0.0.1:6973/AmmoGraph';
+    const url = process.env.AMMOGRAPH_URL || 'https://localhost:6969/AmmoGraph';
     const ready = () => page.locator('.ag-app[data-ready="true"]').waitFor();
     await page.goto(url); await ready();
-    const fixture = await (await context.request.get(new URL('/test/shots-to-kill', url).href)).json();
-    const key = fixture.metrics.at(-1).key;
+    const setup = await page.evaluate(() => ({
+        keys: [...new Set([...document.querySelectorAll('[data-attribute^="ShotsToKillClass"]')].map(e => e.dataset.attribute))]
+            .sort((a, b) => Number(a.replace('ShotsToKillClass', '')) - Number(b.replace('ShotsToKillClass', ''))),
+        calibers: [...document.querySelectorAll('[data-exclude-caliber]')].map(e => ({ id: e.dataset.excludeCaliber, name: e.closest('label').querySelector('span').textContent.trim() })),
+        ammo: [...document.querySelectorAll('[data-exclude-ammo]')].map(e => e.dataset.excludeAmmo)
+    }));
+    const key = setup.keys.at(-1);
+    assert.ok(key, 'The live dataset must provide Shots to Kill metrics');
+    await page.evaluate(async ({ setup, key }) => {
+        const prefs = await import('/ammo-graph/preferences.js?v=26.1');
+        prefs.save({ ...prefs.load(), language: 'en', calibers: setup.calibers.map(c => c.id),
+            includedDefaultAmmo: setup.ammo, includedDefaultCalibers: setup.calibers.map(c => c.id),
+            excludedAmmo: [], excludedCalibers: [], showPellets: false, search: '',
+            columns: ['Name', 'Caliber', key], showTable: true, simulationMode: false });
+    }, { setup, key });
+    await page.reload(); await ready();
+    const items = await page.locator('tbody tr[data-ammo]').evaluateAll((rows, { setup, key }) => rows.map(row => {
+        const display = row.querySelector(`[data-column="${key}"] .ag-table-value`).textContent.trim();
+        const caliber = row.querySelector('[data-column="Caliber"] span[dir="ltr"]').textContent.trim();
+        return { id: row.dataset.ammo, name: row.querySelector('.ag-ammo-name').textContent.trim(), caliberId: setup.calibers.find(c => c.name === caliber)?.id,
+            values: { [key]: { state: display === '100+' ? 'Capped' : /^\d+$/.test(display) ? 'Success' : 'Failed' } } };
+    }), { setup, key });
+    const fixture = { items };
     const capped = fixture.items.find(a => a.values[key]?.state === 'Capped');
-    const successful = fixture.items.find(a => a.values[key]?.state === 'Success' && a.caliberId === capped?.caliberId)
-        || fixture.items.find(a => a.values[key]?.state === 'Success');
+    const successful = fixture.items.find(a => a.values[key]?.state === 'Success' && a.caliberId === 'Caliber545x39')
+        || fixture.items.find(a => a.values[key]?.state === 'Success' && !a.name.includes('DO_NOT_USE'));
     assert.ok(capped && successful, 'Dataset needs successful and capped outcomes');
     const calibers = [...new Set([capped.caliberId, successful.caliberId])];
     await page.evaluate(async ({ key, calibers, selectedId, fixture }) => {
-        const prefs = await import('/ammo-graph/preferences.js?v=24.2');
+        const prefs = await import('/ammo-graph/preferences.js?v=26.1');
         prefs.save({ ...prefs.load(), language: 'en', calibers, showPellets: false,
             search: '', excludedAmmo: [], excludedCalibers: [], selectedId,
             includedDefaultAmmo: fixture.items.map(a => a.id), includedDefaultCalibers: calibers,
@@ -38,6 +59,7 @@ try {
     await page.reload(); await ready();
     assert.equal(await page.locator('.ag-app').getAttribute('lang'), 'en');
     const capture = async (name, locator) => {
+        await page.waitForFunction(() => !document.querySelector('[data-save-status]')?.textContent.trim());
         await page.evaluate(async () => {
             await document.fonts.ready;
             await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
