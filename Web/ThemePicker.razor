@@ -1,0 +1,5 @@
+<button type="button" class="ag-theme-toggle" role="switch" aria-label="@Text["Dark"]" aria-checked="false" title="@Text["Theme"]" @onclick="OnToggle"><MenuIcon Kind="theme" /></button>
+@code {
+    [Parameter] public UiText Text { get; set; } = null!;
+    [Parameter] public EventCallback OnToggle { get; set; }
+}

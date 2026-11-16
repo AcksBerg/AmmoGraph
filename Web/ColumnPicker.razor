@@ -1,0 +1,21 @@
+<details class="ag-column-picker ag-icon-menu">
+    <summary aria-label="@Text["Columns"]" title="@Text["Columns"]" aria-controls="ag-column-panel" aria-haspopup="dialog"><MenuIcon Kind="eye" /></summary>
+    <section class="ag-menu-panel ag-column-panel" id="ag-column-panel" role="dialog" aria-labelledby="ag-column-title">
+    <h2 id="ag-column-title">@Text["Columns"] <span class="ag-count">@Selected.Count</span></h2>
+    <div class="ag-column-options">
+        @foreach (var column in Options)
+        {
+            <label><input type="checkbox" data-column="@column.Key" checked="@Selected.Contains(column.Key)" disabled="@(Selected.Count == 1 && Selected.Contains(column.Key))" @onchange="() => OnToggle.InvokeAsync(column.Key)" />@column.Label</label>
+        }
+    </div>
+    <button type="button" @onclick="OnReset">@Text["DefaultColumns"]</button>
+    </section>
+</details>
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<AmmoMetric> Metrics { get; set; } = [];
+    [Parameter, EditorRequired] public HashSet<string> Selected { get; set; } = [];
+    [Parameter, EditorRequired] public UiText Text { get; set; } = null!;
+    [Parameter] public EventCallback<string> OnToggle { get; set; }
+    [Parameter] public EventCallback OnReset { get; set; }
+    private IEnumerable<(string Key, string Label)> Options => new[] { ("Name", Text["Ammo"]), ("Caliber", Text["Calibers"]) }.Concat(Metrics.Select(m => (m.Key, m.DisplayLabel)));
+}

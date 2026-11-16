@@ -1,0 +1,54 @@
+<details class="ag-exclusions ag-icon-menu">
+    <summary aria-label="@Text["Settings"]" title="@Text["Settings"]" aria-controls="ag-exclusion-panel" aria-haspopup="dialog"><MenuIcon /></summary>
+    <section class="ag-menu-panel ag-exclusion-panel" id="ag-exclusion-panel" role="dialog" aria-labelledby="ag-settings-title">
+    <h2 id="ag-settings-title">@Text["Settings"]</h2>
+    <details class="ag-settings-section" name="ag-settings" data-settings-section="view"><summary>@Text["View"]</summary><div class="ag-view-options">
+        <label><input id="ag-show-filters" type="checkbox" checked="@ShowFilters" @onchange="OnToggleFilters" />@Text["ShowFilters"]</label>
+        <label><input id="ag-show-table" type="checkbox" checked="@ShowTable" @onchange="OnToggleTable" />@Text["ShowTable"]</label>
+        <label><input id="ag-show-details" type="checkbox" checked="@ShowDetails" @onchange="OnToggleDetails" />@Text["ShowDetails"]</label>
+    </div></details>
+    @ChildContent
+    <details class="ag-settings-section" name="ag-settings" data-settings-section="exclusions"><summary id="ag-exclusion-title">@Text["Exclusions"] <span class="ag-count">@(ExcludedCalibers.Count + ExcludedAmmo.Count)</span></summary>
+    <div class="ag-exclusion-toolbar">
+        <input class="ag-input" aria-label="@Text["FilterSearch"]" placeholder="@Text["FilterSearch"]" maxlength="128" @bind="Search" @bind:event="oninput" />
+        <button type="button" class="ag-show-all" @onclick="OnShowAll">@Text["ShowAll"]</button>
+        <button type="button" class="ag-reset-exclusions" @onclick="OnReset">@Text["RestoreDefaults"]</button>
+    </div>
+    <div class="ag-exclusion-sections">
+        <section><h3>@Text["Calibers"]</h3><div class="ag-exclusion-list ag-excluded-calibers">
+            @foreach (var caliber in Items.GroupBy(a => a.CaliberId).OrderByDescending(g => ExcludedCalibers.Contains(g.Key)).ThenBy(g => g.First().Caliber, StringComparer.OrdinalIgnoreCase).Where(g => Matches(g.First().Caliber)))
+            {
+                <label @key="caliber.Key" class="@(ExcludedCalibers.Contains(caliber.Key) ? "is-excluded" : "")"><input type="checkbox" data-exclude-caliber="@caliber.Key" checked="@ExcludedCalibers.Contains(caliber.Key)" @onchange="() => OnCaliberToggle.InvokeAsync(caliber.Key)" /><span dir="ltr">@caliber.First().Caliber</span></label>
+            }
+        </div></section>
+        <section><h3>@Text["Ammo"]</h3><div class="ag-exclusion-list ag-excluded-ammo">
+            @foreach (var ammo in Items.Where(a => !a.IsPellet).OrderByDescending(a => ExcludedAmmo.Contains(a.TemplateId)).ThenBy(a => a.Name, StringComparer.OrdinalIgnoreCase).Where(a => Matches(a.Name, a.Caliber, a.TemplateId)))
+            {
+                <label @key="ammo.TemplateId" class="@(ExcludedAmmo.Contains(ammo.TemplateId) ? "is-excluded" : "")"><input type="checkbox" data-exclude-ammo="@ammo.TemplateId" checked="@ExcludedAmmo.Contains(ammo.TemplateId)" @onchange="() => OnAmmoToggle.InvokeAsync(ammo.TemplateId)" /><span>@ammo.Name <small dir="ltr">@ammo.Caliber</small>
+                    @if (ammo.DefaultHiddenReason is { } reason) { <small class="ag-default-exclusion">@Text["DefaultHidden"]@(reason switch { "Unused" => " · !!!DO_NOT_USE!!!", "Airsoft" => " · Airsoft 6mm BB", "Shrapnel" => " · 9x18mm", _ => "" })</small> }
+                </span></label>
+            }
+        </div></section>
+    </div>
+    </details>
+    </section>
+</details>
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter, EditorRequired] public IReadOnlyList<AmmoEntry> Items { get; set; } = [];
+    [Parameter, EditorRequired] public HashSet<string> ExcludedCalibers { get; set; } = [];
+    [Parameter, EditorRequired] public HashSet<string> ExcludedAmmo { get; set; } = [];
+    [Parameter, EditorRequired] public UiText Text { get; set; } = null!;
+    [Parameter] public EventCallback<string> OnCaliberToggle { get; set; }
+    [Parameter] public EventCallback<string> OnAmmoToggle { get; set; }
+    [Parameter] public EventCallback OnShowAll { get; set; }
+    [Parameter] public EventCallback OnReset { get; set; }
+    [Parameter] public bool ShowFilters { get; set; } = true;
+    [Parameter] public bool ShowTable { get; set; } = true;
+    [Parameter] public bool ShowDetails { get; set; } = true;
+    [Parameter] public EventCallback OnToggleFilters { get; set; }
+    [Parameter] public EventCallback OnToggleTable { get; set; }
+    [Parameter] public EventCallback OnToggleDetails { get; set; }
+    private string Search = "";
+    private bool Matches(params string[] values) => AmmoSearch.Matches(Search, values);
+}

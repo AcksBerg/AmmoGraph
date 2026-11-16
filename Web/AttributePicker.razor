@@ -1,0 +1,88 @@
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+<details @ref="Root" class="ag-attribute-picker" data-attributes="@Scope">
+    <summary>@Title <span class="ag-count">@Selected.Count</span></summary>
+    <div class="ag-transfer">
+        @foreach (var side in new[] { "available", "selected" })
+        {
+            @if (side == "selected")
+            {
+                <div class="ag-transfer-controls">
+                    <button type="button" data-transfer="add" disabled="@(Focused is null || Selected.Contains(Focused))" aria-label="@Text["AddAttribute"]" title="@Text["AddAttribute"]" @onclick="() => Transfer(true, false)">→</button>
+                    <button type="button" data-transfer="add-all" disabled="@(Selected.Count == Options.Count)" aria-label="@Text["AddAllAttributes"]" title="@Text["AddAllAttributes"]" @onclick="() => Transfer(true, true)">⇉</button>
+                    <button type="button" data-transfer="remove" disabled="@(Focused is null || !Selected.Contains(Focused))" aria-label="@Text["RemoveAttribute"]" title="@Text["RemoveAttribute"]" @onclick="() => Transfer(false, false)">←</button>
+                    <button type="button" data-transfer="remove-all" disabled="@(Selected.Count == 0)" aria-label="@Text["RemoveAllAttributes"]" title="@Text["RemoveAllAttributes"]" @onclick="() => Transfer(false, true)">⇇</button>
+                </div>
+            }
+            <section class="ag-transfer-column"><h4>@Text[side == "selected" ? "SelectedAttributes" : "AvailableAttributes"]</h4>
+                <div class="ag-transfer-list" data-side="@side" role="listbox" aria-label="@(Title + ": " + Text[side == "selected" ? "SelectedAttributes" : "AvailableAttributes"])">
+                    @foreach (var key in side == "selected" ? Selected : Options.Select(o => o.Key).Except(Selected))
+                    {
+                        var index = Selected.IndexOf(key);
+                        <div @key="key" class="ag-transfer-item @(Focused == key ? "is-focused" : "")" data-attribute="@key" role="option" tabindex="0" aria-selected="@(Focused == key ? "true" : "false")" @onclick="() => Focused = key" @onfocus="() => Focused = key" @onkeydown="e => ItemKey(e, key, side)">
+                            <span>@Options.First(o => o.Key == key).Label</span>
+                            @if (side == "selected")
+                            {
+                                <span class="ag-order-controls" @onkeydown:stopPropagation="true"><button type="button" data-move="up" disabled="@(index == 0)" aria-label="@(Text["MoveUp"] + ": " + Label(key))" @onclick="() => Move(index, -1)" @onclick:stopPropagation="true">↑</button><button type="button" data-move="down" disabled="@(index == Selected.Count - 1)" aria-label="@(Text["MoveDown"] + ": " + Label(key))" @onclick="() => Move(index, 1)" @onclick:stopPropagation="true">↓</button></span>
+                            }
+                        </div>
+                    }
+                </div>
+            </section>
+        }
+    </div>
+    <button type="button" class="ag-reset-attributes" @onclick="() => OnChange.InvokeAsync(Defaults.ToList())">@Text["DefaultColumns"]</button>
+</details>
+@code {
+    [Parameter] public string Scope { get; set; } = "";
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public List<string> Selected { get; set; } = [];
+    [Parameter] public IReadOnlyList<(string Key, string Label)> Options { get; set; } = [];
+    [Parameter] public IReadOnlyList<string> Defaults { get; set; } = [];
+    [Parameter] public UiText Text { get; set; } = null!;
+    [Parameter] public EventCallback<List<string>> OnChange { get; set; }
+    private string? Focused;
+    private ElementReference Root;
+    private IJSObjectReference? Module;
+    private DotNetObjectReference<AttributePicker>? Self;
+    private string Label(string key) => Options.First(o => o.Key == key).Label;
+    private Task Transfer(bool add, bool all)
+    {
+        if (all) return OnChange.InvokeAsync(add ? Selected.Concat(Options.Select(o => o.Key).Except(Selected)).ToList() : []);
+        if (Focused is null) return Task.CompletedTask;
+        return Drop(Focused, add ? "selected" : "available", null);
+    }
+    [JSInvokable] public Task Drop(string key, string side, string? before)
+    {
+        if (!Options.Any(o => o.Key == key) || side is not ("selected" or "available") || key == before) return Task.CompletedTask;
+        var next = Selected.ToList(); next.Remove(key);
+        if (side == "selected") { var index = before is null ? -1 : next.IndexOf(before); next.Insert(index < 0 ? next.Count : index, key); }
+        Focused = key;
+        return OnChange.InvokeAsync(next);
+    }
+    private Task Move(int index, int step)
+    {
+        if (index < 0 || index + step < 0 || index + step >= Selected.Count) return Task.CompletedTask;
+        var next = Selected.ToList(); (next[index], next[index + step]) = (next[index + step], next[index]);
+        Focused = next[index + step]; return OnChange.InvokeAsync(next);
+    }
+    private Task ItemKey(KeyboardEventArgs e, string key, string side)
+    {
+        Focused = key;
+        if (e.Key == "Enter") return Drop(key, side == "selected" ? "available" : "selected", null);
+        if (e.AltKey && e.Key is "ArrowUp" or "ArrowDown") return Move(Selected.IndexOf(key), e.Key == "ArrowUp" ? -1 : 1);
+        return Task.CompletedTask;
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        Module = await JS.InvokeAsync<IJSObjectReference>("import", "/ammo-graph/attribute-picker.js?v=16");
+        Self = DotNetObjectReference.Create(this); await Module.InvokeVoidAsync("bind", Root, Self);
+    }
+    public async ValueTask DisposeAsync()
+    {
+        try { if (Module is not null) { await Module.InvokeVoidAsync("unbind", Root); await Module.DisposeAsync(); } }
+        catch (JSDisconnectedException) { }
+        Self?.Dispose();
+    }
+}

@@ -1,0 +1,400 @@
+@page "/AmmoGraph"
+@layout GraphLayout
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+@inject AmmoCatalog Catalog
+@inject IJSRuntime JS
+
+<PageTitle>Ammo Graph · SPT</PageTitle>
+<div class="ag-app" lang="@Language" dir="@(T.RightToLeft ? "rtl" : "ltr")" data-theme="@Theme" data-ready="@(_preferencesLoaded ? "true" : "false")">
+    <header class="ag-header">
+        <a href="/AmmoGraph" class="ag-brand"><span class="ag-brand-mark">A<span>G</span></span><span>SPT <strong>AMMO GRAPH</strong><small>@T["Subtitle"]</small></span></a>
+        <div class="ag-header-actions">
+            <label class="ag-language"><span>@T["Language"]</span><select id="ag-language" @bind="Language" @bind:after="LanguageChanged">@foreach (var language in Catalog.Languages) { <option value="@language.Code">@language.Name</option> }</select></label>
+            <ExclusionEditor Items="Snapshot.Items" ExcludedCalibers="ExcludedCalibers" ExcludedAmmo="ExcludedAmmo" Text="T" OnCaliberToggle="ToggleExcludedCaliber" OnAmmoToggle="ToggleExcludedAmmo" OnShowAll="ShowAllExcluded" OnReset="ResetExclusions" ShowFilters="ShowFilters" ShowTable="ShowTable" ShowDetails="ShowDetails" OnToggleFilters="ToggleFilters" OnToggleTable="ToggleTable" OnToggleDetails="ToggleDetails">
+                <details class="ag-settings-section ag-attribute-settings" name="ag-settings" data-settings-section="attributes"><summary>@T["Attributes"]</summary>
+                    <AttributePicker Scope="tooltip" Title="@T["Tooltip"]" Selected="TooltipColumns" Options="MetricOptions" Defaults="DefaultAxes" Text="T" OnChange="v => SetAttributes(0, v)" />
+                    <AttributePicker Scope="details" Title="@T["Selected"]" Selected="DetailColumns" Options="MetricOptions" Defaults="DefaultAxes" Text="T" OnChange="v => SetAttributes(1, v)" />
+                    <AttributePicker Scope="axes" Title="@(T["XAxis"] + " / " + T["YAxis"])" Selected="XColumns" Options="MetricOptions" Defaults="DefaultAxes" Text="T" OnChange="v => SetAttributes(2, v)" />
+                </details>
+                <CaliberNameEditor Items="Snapshot.Items" Names="EffectiveCaliberNames" Text="T" OnSave="SavePersonalName" OnReset="ResetPersonalNames" />
+            </ExclusionEditor>
+            <ThemePicker Text="T" OnToggle="ToggleTheme" />
+            <a class="ag-server-link" href="/">SPT ↗</a>
+        </div>
+    </header>
+    @if (!Catalog.Ready)
+    {
+        <main class="ag-loading" role="status">@T["Loading"]</main>
+    }
+    else
+    {
+        var visible = VisibleItems;
+        var reference = Selected;
+        var plotted = XColumns.Count == 0 ? Array.Empty<AmmoEntry>() : visible.Where(a => Value(a, XAxis).HasValue && Value(a, YAxis).HasValue).ToArray();
+        var scaleItems = DynamicScale ? plotted : Snapshot.Items.Where(a => IsAllowed(a) && (ShowPellets || !a.IsPellet) && Value(a, XAxis).HasValue && Value(a, YAxis).HasValue).ToArray();
+        var xr = Range(scaleItems, XAxis);
+        var yr = Range(scaleItems, YAxis);
+        <div class="ag-workspace @(!ShowFilters ? "ag-no-sidebar" : "")">
+            @if (ShowFilters)
+            {
+            <aside class="ag-sidebar" aria-label="@T["Calibers"]">
+                <div class="ag-section-title"><h2>@T["Calibers"]</h2><span>@AvailableCalibers.Count(c => SelectedCalibers.Contains(c.Id)) / @AvailableCalibers.Count()</span></div>
+                <input class="ag-input" maxlength="128" aria-label="@T["CaliberSearch"]" placeholder="@T["CaliberSearch"]" @bind="CaliberSearch" @bind:event="oninput" @bind:after="Changed" />
+                <div class="ag-bulk"><button @onclick="SelectAll">@T["All"]</button><button @onclick="SelectNone">@T["None"]</button></div>
+                <button type="button" class="ag-apply-filter" disabled="@(AmmoSearch.Normalize(CaliberSearch).Length == 0)" @onclick="ApplyCaliberFilter">@T["ApplyFilter"]</button>
+                <div class="ag-calibers">
+                    @foreach (var cal in SearchedCalibers)
+                    {
+                        <label @key="cal.Id" class="ag-caliber @(SelectedCalibers.Contains(cal.Id) ? "is-active" : "")" data-caliber="@cal.Id" style="--caliber-color:@Color(cal.Id)" @ondblclick="() => SelectOnly(cal.Id)" @ondblclick:preventDefault="true">
+                            <input type="checkbox" checked="@SelectedCalibers.Contains(cal.Id)" @onchange="() => Toggle(cal.Id)" />
+                            <CaliberSymbol Shape="@Shape(cal.Id)" /><span dir="ltr">@cal.Name</span><small>@cal.Count</small>
+                        </label>
+                    }
+                </div>
+            </aside>
+            }
+            <main class="ag-main">
+                <section class="ag-toolbar" aria-label="@T["Chart"]">
+                    <div class="ag-axis-controls">
+                        <label>@T["XAxis"]<select id="ag-x" disabled="@(XColumns.Count == 0)" @bind="XAxis" @bind:after="Changed">@foreach (var key in XColumns) { <option value="@key">@Metric(key).DisplayLabel</option> }</select></label>
+                        <button class="ag-swap" disabled="@(XColumns.Count == 0)" aria-label="@T["XAxis"] ↔ @T["YAxis"]" @onclick="SwapAxes">⇄</button>
+                        <label>@T["YAxis"]<select id="ag-y" disabled="@(YColumns.Count == 0)" @bind="YAxis" @bind:after="Changed">@foreach (var key in YColumns) { <option value="@key">@Metric(key).DisplayLabel</option> }</select></label>
+                    </div>
+                    <div class="ag-chart-options"><label><input type="checkbox" @bind="DynamicScale" @bind:after="Changed" /> @T["AutoScale"]</label><label><input type="checkbox" @bind="ShowNames" @bind:after="Changed" /> @T["ShowNames"]</label></div>
+                </section>
+                <div class="ag-analysis @(!ShowDetails ? "ag-no-details" : "")">
+                    <section class="ag-chart-panel" aria-label="@T["Chart"]">
+                        <div class="ag-chart-heading"><h1>@Metric(YAxis).DisplayLabel <span>×</span> @Metric(XAxis).DisplayLabel</h1><div class="ag-navigation-controls"><span class="ag-count">@plotted.Length @T["Rows"]</span><button type="button" data-nav="in" aria-label="@T["ZoomIn"]" title="@T["ZoomIn"]">+</button><button type="button" data-nav="out" aria-label="@T["ZoomOut"]" title="@T["ZoomOut"]">−</button><button type="button" data-nav="reset" aria-label="@T["ResetView"]" title="@T["ResetView"]">↺</button></div></div>
+                        <div class="ag-chart-wrap">
+                            <svg class="ag-chart" viewBox="0 0 960 550" role="img" tabindex="0" aria-label="@($"{T["Subtitle"]}: {Metric(XAxis).DisplayLabel} / {Metric(YAxis).DisplayLabel}, {plotted.Length}")" data-x-key="@XAxis" data-y-key="@YAxis" data-language="@Language" data-x-min="@xr.Min.ToString("R", CultureInfo.InvariantCulture)" data-x-max="@xr.Max.ToString("R", CultureInfo.InvariantCulture)" data-y-min="@yr.Min.ToString("R", CultureInfo.InvariantCulture)" data-y-max="@yr.Max.ToString("R", CultureInfo.InvariantCulture)">
+                                <defs><clipPath id="ag-plot-clip"><rect x="84" y="42" width="832" height="428" /></clipPath></defs>
+                                <g class="ag-static-axes">
+                                @foreach (var tick in xr.Ticks)
+                                {
+                                    var x = 84 + (tick - xr.Min) / (xr.Max - xr.Min) * 832;
+                                    <g class="ag-grid"><line x1="@F(x)" y1="42" x2="@F(x)" y2="470" /></g>
+                                    <g class="ag-tick"><text x="@F(x)" y="496" text-anchor="middle">@Format(tick)</text></g>
+                                }
+                                @foreach (var tick in yr.Ticks)
+                                {
+                                    var y = 470 - (tick - yr.Min) / (yr.Max - yr.Min) * 428;
+                                    <g class="ag-grid"><line x1="84" y1="@F(y)" x2="916" y2="@F(y)" /></g>
+                                    <g class="ag-tick"><text x="70" y="@F(y + 4)" text-anchor="end">@Format(tick)</text></g>
+                                }
+                                </g>
+                                <g class="ag-navigation-axes" aria-hidden="true"></g>
+                                <g class="ag-axis-label"><text x="500" y="533" text-anchor="middle">@AxisLabel(XAxis)</text><text x="0" y="0" transform="translate(21 255) rotate(-90)" text-anchor="middle">@AxisLabel(YAxis)</text></g>
+                                <g class="ag-point-layer" clip-path="url(#ag-plot-clip)">
+                                @foreach (var group in plotted.GroupBy(a => (X: Value(a, XAxis)!.Value, Y: Value(a, YAxis)!.Value)))
+                                {
+                                    var members = group.ToArray();
+                                    var ammo = members.FirstOrDefault(a => a.Id == SelectedId) ?? members[0];
+                                    var x = 84 + (group.Key.X - xr.Min) / (xr.Max - xr.Min) * 832;
+                                    var y = 470 - (group.Key.Y - yr.Min) / (yr.Max - yr.Min) * 428;
+                                    var selected = members.Any(a => a.Id == SelectedId);
+                                    <g class="ag-point @(selected ? "is-selected" : "")" data-id="@string.Join(",", members.Select(a => a.Id))" data-x="@group.Key.X.ToString("R", CultureInfo.InvariantCulture)" data-y="@group.Key.Y.ToString("R", CultureInfo.InvariantCulture)" data-base-x="@F(x)" data-base-y="@F(y)" role="button" tabindex="0" aria-label="@PointTitle(members)" style="color:@Color(ammo.CaliberId)" @onclick="() => SelectGroup(members)" @onkeydown="e => PointKey(e, members)" @onmouseenter="() => HoverGroup(members)" @onmouseleave="ClearHover" @onfocus="() => HoverGroup(members)" @onblur="ClearHover">
+                                        <circle cx="@F(x)" cy="@F(y)" r="13" class="ag-hit-area" />
+                                        @if (selected) { <circle cx="@F(x)" cy="@F(y)" r="11" class="ag-selection-ring" /> }
+                                        <g transform="@($"translate({F(x)} {F(y)})")"><CaliberMarker Shape="@Shape(ammo.CaliberId)" /></g>
+                                        @if (ShowNames || selected) { <g><text class="ag-point-name" x="@F(Math.Min(x + 12, 780))" y="@F(Math.Max(y - 12, 28))">@ShortName(ammo)</text></g> }
+                                        @if (members.Length > 1) { <g><text class="ag-overlap" x="@F(x + 8)" y="@F(y + 15)">+@(members.Length - 1)</text></g> }
+                                    </g>
+                                }
+                                </g>
+                            </svg>
+                            @if (plotted.Length == 0) { <div class="ag-chart-empty" role="status">@(XColumns.Count == 0 ? T["NoAxisAttributes"] : visible.Length == 0 ? EmptyMessage : T["Missing"])</div> }
+                        </div>
+                        <p class="ag-navigation-hint">@T["NavigationHint"]</p>
+                        <div class="ag-legend-bulk"><button type="button" data-legend-all @onclick="SelectAll">@T["All"]</button><button type="button" data-legend-none @onclick="SelectNone">@T["None"]</button><label class="ag-pellet-option"><input id="ag-pellets" type="checkbox" @bind="ShowPellets" @bind:after="Changed" />@T["ShowPellets"]</label></div>
+                        <div class="ag-legend">@foreach (var cal in AvailableCalibers) { <button @key="cal.Id" class="@(SelectedCalibers.Contains(cal.Id) ? "is-active" : "")" data-caliber="@cal.Id" aria-pressed="@(SelectedCalibers.Contains(cal.Id) ? "true" : "false")" style="--caliber-color:@Color(cal.Id)" @onclick="e => LegendClick(e, cal.Id)" @ondblclick="() => SelectOnly(cal.Id)" @ondblclick:preventDefault="true"><CaliberSymbol Shape="@Shape(cal.Id)" /><span dir="ltr">@cal.Name</span></button> }</div>
+                    </section>
+                    @if (ShowDetails)
+                    {
+                    <aside class="ag-details" aria-label="@T["Selected"]">
+                        <h2>@T["Selected"]</h2>
+                        @if (Selected is { } detail)
+                        {
+                            <div class="ag-detail-identity"><span data-detail="Icon" style="--caliber-color:@Color(detail.CaliberId)"><CaliberSymbol Shape="@Shape(detail.CaliberId)" /></span><span class="ag-detail-caliber" data-detail="Caliber" dir="ltr">@detail.Caliber</span></div>
+                            <h3 data-detail="Name">@detail.Name</h3>
+                            @if (Hovered is { } comparison) { <div class="ag-comparison-heading" aria-live="polite"><span>@T["Compare"]</span><strong>@comparison.Name</strong></div> }
+                            else { <div class="ag-comparison-heading ag-comparison-placeholder" aria-hidden="true"></div> }
+                            @foreach (var key in DetailColumns)
+                            {
+                                <dl class="ag-primary-values" data-detail="@key"><div><dt>@Metric(key).DisplayLabel</dt><dd><ComparedValue Baseline="detail" Candidate="Hovered" Metric="Metric(key)" Text="T" /></dd></div></dl>
+                            }
+                            @if (ShowAllValues)
+                            {
+                                <dl class="ag-secondary-values ag-extra-values">@foreach (var metric in Snapshot.Metrics.Where(m => !DetailColumns.Contains(m.Key))) { <div><dt>@metric.DisplayLabel</dt><dd><ComparedValue Baseline="detail" Candidate="Hovered" Metric="metric" Text="T" /></dd></div> }</dl>
+                            }
+                            @if (Snapshot.Metrics.Any(m => !DetailColumns.Contains(m.Key)))
+                            {
+                                <button type="button" class="ag-all-values" aria-expanded="@ShowAllValues.ToString().ToLowerInvariant()" @onclick="() => ShowAllValues = !ShowAllValues"><span aria-hidden="true">@(ShowAllValues ? "▴" : "▾")</span> @T["AllValues"]</button>
+                            }
+                        }
+                        else { <p class="ag-select-hint">@T["SelectHint"]</p> }
+                    </aside>
+                    }
+                </div>
+                @if (ShowTable)
+                {
+                <section class="ag-table-panel" aria-label="@T["Visible"]">
+                    <div class="ag-table-heading"><div><h2>@T["Visible"]</h2><span class="ag-count">@visible.Length @T["Rows"]</span></div><div class="ag-table-tools"><input class="ag-input" maxlength="128" aria-label="@T["AmmoSearch"]" placeholder="@T["AmmoSearch"]" @bind="Search" @bind:event="oninput" @bind:after="Changed" /><ColumnPicker Metrics="Snapshot.Metrics" Selected="TableColumns" Text="T" OnToggle="ToggleColumn" OnReset="ResetColumns" /></div></div>
+                    <div class="ag-table-scroll"><table class="ag-comparison-table"><thead><tr>
+                        @foreach (var key in OrderedColumns)
+                        { <th data-column="@key" class="@(key is "Name" or "Caliber" ? "" : "ag-numeric")" aria-sort="@(SortKey == key ? Descending ? "descending" : "ascending" : "none")"><button @onclick="() => Sort(key)">@(key == "Name" ? T["Ammo"] : key == "Caliber" ? T["Calibers"] : Metric(key).DisplayLabel) <span>@(SortKey == key ? Descending ? "↓" : "↑" : "↕")</span></button></th> }
+                    </tr></thead><tbody>
+                        @foreach (var ammo in SortItems(visible))
+                        {
+                            <tr data-ammo="@ammo.Id" class="@(SelectedId == ammo.Id ? "is-selected" : "")" @onclick="() => Select(ammo.Id)" @onmouseenter="() => Hover(ammo.Id)" @onmouseleave="ClearHover">
+                                @foreach (var key in OrderedColumns)
+                                {
+                                    @if (key == "Name") { <td data-column="Name"><button class="ag-ammo-name" @onclick="() => Select(ammo.Id)" @onfocus="() => Hover(ammo.Id)" @onblur="ClearHover">@ammo.Name</button></td> }
+                                    else if (key == "Caliber") { <td data-column="Caliber" class="ag-caliber-cell"><CaliberSymbol Shape="@Shape(ammo.CaliberId)" Style="@($"--caliber-color:{Color(ammo.CaliberId)}")" /> <span dir="ltr">@ammo.Caliber</span></td> }
+                                    else { <td data-column="@key" class="ag-numeric" data-value="@(Value(ammo, key)?.ToString(CultureInfo.InvariantCulture))"><TableValue Item="ammo" Reference="reference" Metric="Metric(key)" Text="T" /></td> }
+                                }
+                            </tr>
+                        }
+                    </tbody></table></div>
+                    @if (visible.Length == 0) { <p class="ag-table-empty" role="status">@EmptyMessage</p> }
+                </section>
+                }
+            </main>
+        </div>
+        <div class="ag-tooltip" id="ag-tooltip" role="tooltip" tabindex="0" data-group="@string.Join(",", TooltipItems.Select(a => a.Id))">
+            <div class="ag-tooltip-scroll">
+                @foreach (var ammo in TooltipItems)
+                {
+                    <article class="ag-tooltip-entry" data-tooltip-ammo="@ammo.Id" style="--caliber-color:@Color(ammo.CaliberId)">
+                        <div class="ag-tooltip-identity"><span data-tooltip-column="Icon" data-tooltip-value="Icon"><CaliberSymbol Shape="@Shape(ammo.CaliberId)" /></span><span class="ag-tooltip-caliber" data-tooltip-column="Caliber" data-tooltip-value="Caliber" dir="ltr">@ammo.Caliber</span></div>
+                        <div class="ag-tooltip-name" data-tooltip-column="Name" data-tooltip-value="Name">@ammo.Name</div>
+                        <dl>
+                            @foreach (var key in TooltipColumns)
+                            {
+                                <div data-tooltip-column="@key" class="ag-tooltip-field ag-tooltip-metric">
+                                    <dt>@AttributeLabel(key)</dt>
+                                    <dd data-tooltip-value="@key">@(Value(ammo, key) is { } value ? Format(value) : "—")</dd>
+                                </div>
+                            }
+                        </dl>
+                    </article>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private string Language = "en";
+    private string Theme = "system";
+    private bool ShowAllValues;
+    private Dictionary<string,string?> PersonalCaliberNames = new(StringComparer.OrdinalIgnoreCase);
+    private IReadOnlyDictionary<string,string>? _effectiveNames;
+    private IReadOnlyDictionary<string,string> EffectiveCaliberNames => _effectiveNames ??= CaliberNameMap.WithOverrides(Catalog.CaliberNames,PersonalCaliberNames);
+    private AmmoSnapshot? _personalSnapshot, _snapshotBase;
+    private AmmoSnapshot Snapshot
+    {
+        get { var source=Catalog.GetBaseSnapshot(Language); if (_personalSnapshot is null || !ReferenceEquals(source,_snapshotBase)) { _snapshotBase=source; _personalSnapshot=SnapshotBuilder.RenameCalibers(source,EffectiveCaliberNames); } return _personalSnapshot; }
+    }
+    private void PersonalNamesChanged() { _effectiveNames=null; _personalSnapshot=null; RebuildCalibers(); HoveredId=null; TooltipItems=[]; Changed(); }
+    private void SavePersonalName(KeyValuePair<string,string?> change)
+    {
+        if (!Snapshot.Items.Any(a=>a.CaliberId.Split(':')[0]==change.Key) || (change.Value is not null && (string.IsNullOrWhiteSpace(change.Value) || change.Value.Trim().Length>128))) throw new ArgumentException("Invalid caliber name.");
+        PersonalCaliberNames[CaliberNameMap.Normalize(change.Key)] = change.Value?.Trim().Replace('×','x'); PersonalNamesChanged();
+    }
+    private void ResetPersonalNames() { PersonalCaliberNames.Clear(); PersonalNamesChanged(); }
+    private UiText T => new(Language);
+    private string XAxis = "Damage", YAxis = "PenetrationPower", Search = "", CaliberSearch = "", SortKey = "Name";
+    private bool DynamicScale = true, ShowNames, ShowPellets, Descending, _save, _preferencesLoaded;
+    private bool ShowFilters = true, ShowTable = true, ShowDetails = true;
+    private string? SelectedId, HoveredId;
+    private HashSet<string> SelectedCalibers = [];
+    private HashSet<string> ExcludedCalibers = [], ExcludedAmmo = [], IncludedDefaultAmmo = [];
+    private HashSet<string> IncludedDefaultCalibers = [];
+    private static readonly string[] DefaultColumns = ["Name", "Caliber", "Damage", "PenetrationPower", "InitialSpeed"];
+    private static readonly string[] DefaultAttributes = ["Icon", "Caliber", "Name", "Damage", "PenetrationPower", "InitialSpeed"];
+    private static readonly string[] DefaultAxes = ["Damage", "PenetrationPower", "InitialSpeed"];
+    private List<string> TooltipColumns = [..DefaultAxes], DetailColumns = [..DefaultAxes], XColumns = [..DefaultAxes], YColumns = [..DefaultAxes];
+    private AmmoEntry[] TooltipItems = [];
+    private IReadOnlyList<(string Key, string Label)> MetricOptions => Snapshot.Metrics.Select(m => (m.Key, m.DisplayLabel)).ToArray();
+    private IReadOnlyList<(string Key, string Label)> AttributeOptions => new[] { ("Icon", T["Icon"]), ("Caliber", T["Calibers"]), ("Name", T["Ammo"]) }.Concat(MetricOptions).ToArray();
+    private string AttributeLabel(string key) => key switch { "Icon" => T["Icon"], "Caliber" => T["Calibers"], "Name" => T["Ammo"], _ => Metric(key).DisplayLabel };
+    private void SetAttributes(int scope, List<string> values)
+    {
+        switch (scope)
+        {
+            case 0: TooltipColumns = values; break;
+            case 1: DetailColumns = values; break;
+            case 2: XColumns = values; YColumns = values; if (values.Count > 0) { if (!values.Contains(XAxis)) XAxis = values[0]; if (!values.Contains(YAxis)) YAxis = values[0]; } break;
+        }
+        Changed();
+    }
+    private List<string> RestoreAttributes(string[]? saved, bool numericOnly = false, bool allowEmpty = false)
+    {
+        var allowed = (numericOnly ? MetricOptions : AttributeOptions).Select(o => o.Key).ToHashSet();
+        var result = (saved ?? (numericOnly ? DefaultAxes : DefaultAttributes)).Where(allowed.Contains).Distinct().ToList();
+        return result.Count > 0 || (allowEmpty && saved is not null) ? result : [..(numericOnly ? DefaultAxes : DefaultAttributes)];
+    }
+    private HashSet<string> TableColumns = DefaultColumns.ToHashSet();
+    private IEnumerable<string> ColumnKeys => new[] { "Name", "Caliber" }.Concat(Snapshot.Metrics.Select(m => m.Key));
+    private IEnumerable<string> OrderedColumns => ColumnKeys.Where(TableColumns.Contains);
+    private IEnumerable<string> DefaultExcludedIds => Snapshot.Items.Where(a => a.DefaultHiddenReason is not null).Select(a => a.TemplateId).Distinct();
+    private IEnumerable<string> DefaultExcludedCalibers => Snapshot.Items.Select(a => a.CaliberId).Where(id => DefaultExclusions.IsDefaultCaliber(id, Catalog.ExclusionRules)).Distinct();
+    private CaliberChoice[] Calibers = [];
+    private IJSObjectReference? _module;
+    private static readonly string[] Colors = ["#60c8d6", "#e3b765", "#a396e5", "#80be90", "#dd8f9f", "#84a7e4", "#c8bd88", "#ca9c76"];
+    private sealed record CaliberChoice(string Id, string Name, int Count, bool IsPellet);
+    private IEnumerable<CaliberChoice> AvailableCalibers => Calibers.Where(c => c.Count > 0 && !ExcludedCalibers.Contains(c.Id) && (ShowPellets || !c.IsPellet));
+    private IEnumerable<CaliberChoice> SearchedCalibers => AvailableCalibers.Where(c => AmmoSearch.Matches(CaliberSearch, c.Name));
+    private void ApplyCaliberFilter() { if (AmmoSearch.Normalize(CaliberSearch).Length == 0) return; SelectedCalibers = SearchedCalibers.Select(c => c.Id).ToHashSet(); Changed(); }
+    private async Task ToggleTheme() { if (_module is null) return; Theme = await _module.InvokeAsync<string>("oppositeTheme"); _save = true; }
+    public sealed record Preferences(string Language, string[] Calibers, string XAxis, string YAxis, bool DynamicScale, bool ShowNames, bool ShowPellets, string Search, string CaliberSearch, string SortKey, bool Descending, string? SelectedId, bool? LegacyWholeLoad = null, string[]? Columns = null, string[]? ExcludedCalibers = null, string[]? ExcludedAmmo = null, string[]? IncludedDefaultAmmo = null, string[]? IncludedDefaultCalibers = null, bool? ShowFilters = null, bool? ShowTable = null, bool? ShowDetails = null, string[]? TooltipColumns = null, string[]? DetailColumns = null, string[]? XColumns = null, string[]? YColumns = null, string? Theme = null, Dictionary<string,string?>? CaliberNames = null);
+    private bool IsAllowed(AmmoEntry ammo) => !ExcludedCalibers.Contains(ammo.CaliberId) && !ExcludedAmmo.Contains(ammo.TemplateId);
+    private bool HasAmmoFilter => ShowTable && AmmoSearch.Normalize(Search).Length > 0;
+    private string EmptyMessage => !AvailableCalibers.Any(c => SelectedCalibers.Contains(c.Id)) ? T["NoCalibers"] : HasAmmoFilter ? T["Empty"] : T["EmptySelection"];
+    private AmmoEntry[] VisibleItems => Snapshot.Items.Where(a => IsAllowed(a) && (ShowPellets || !a.IsPellet) && SelectedCalibers.Contains(a.CaliberId) && (!ShowTable || AmmoSearch.Matches(Search, a.Name, a.Caliber))).ToArray();
+    private AmmoEntry? Selected => VisibleItems.FirstOrDefault(a => a.Id == SelectedId);
+    private AmmoEntry? Hovered => SelectedId is null || HoveredId == SelectedId ? null : VisibleItems.FirstOrDefault(a => a.Id == HoveredId);
+
+    protected override void OnInitialized()
+    {
+        Language = Catalog.Snapshot.Language;
+        ApplyDefaultExclusions();
+        RebuildCalibers();
+        var defaults = new[] { "Caliber545x39", "Caliber556x45NATO" }.Where(id => Calibers.Any(c => c.Id == id));
+        SelectedCalibers = defaults.ToHashSet();
+        if (SelectedCalibers.Count == 0 && Calibers.Length > 0) SelectedCalibers.Add(Calibers[0].Id);
+    }
+
+    private void RebuildCalibers() => Calibers = Snapshot.Items.GroupBy(a => a.CaliberId).Select(g => new CaliberChoice(g.Key, g.First().Caliber, g.Count(a => !ExcludedAmmo.Contains(a.TemplateId)), g.First().IsPellet)).OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase).ToArray();
+    private void LanguageChanged() { RebuildCalibers(); HoveredId = null; Changed(); }
+    private void ApplyDefaultExclusions() { ExcludedAmmo.UnionWith(DefaultExcludedIds.Except(IncludedDefaultAmmo)); ExcludedCalibers.UnionWith(DefaultExcludedCalibers.Except(IncludedDefaultCalibers)); }
+    private void ToggleExcludedCaliber(string id)
+    {
+        if (!ExcludedCalibers.Add(id)) { ExcludedCalibers.Remove(id); if (DefaultExclusions.IsDefaultCaliber(id, Catalog.ExclusionRules)) IncludedDefaultCalibers.Add(id); }
+        else IncludedDefaultCalibers.Remove(id);
+        Changed();
+    }
+    private void ToggleExcludedAmmo(string id)
+    {
+        if (!ExcludedAmmo.Add(id)) { ExcludedAmmo.Remove(id); if (DefaultExcludedIds.Contains(id)) IncludedDefaultAmmo.Add(id); }
+        else IncludedDefaultAmmo.Remove(id);
+        RebuildCalibers(); Changed();
+    }
+    private void ShowAllExcluded() { ExcludedCalibers.Clear(); ExcludedAmmo.Clear(); IncludedDefaultAmmo = DefaultExcludedIds.ToHashSet(); IncludedDefaultCalibers = DefaultExcludedCalibers.ToHashSet(); RebuildCalibers(); Changed(); }
+    private void ResetExclusions() { ExcludedCalibers.Clear(); ExcludedAmmo.Clear(); IncludedDefaultAmmo.Clear(); IncludedDefaultCalibers.Clear(); ApplyDefaultExclusions(); RebuildCalibers(); Changed(); }
+    private void ToggleFilters() { ShowFilters = !ShowFilters; _save = true; }
+    private void ToggleTable() { ShowTable = !ShowTable; Changed(); }
+    private void ToggleDetails() { ShowDetails = !ShowDetails; _save = true; }
+    private void ToggleColumn(string key)
+    {
+        if (TableColumns.Contains(key) && TableColumns.Count == 1) return;
+        if (!TableColumns.Add(key)) TableColumns.Remove(key);
+        if (!TableColumns.Contains(SortKey)) { SortKey = OrderedColumns.First(); Descending = false; }
+        _save = true;
+    }
+    private void ResetColumns() { TableColumns = DefaultColumns.ToHashSet(); SortKey = "Name"; Descending = false; _save = true; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        try
+        {
+            if (firstRender)
+            {
+                _module = await JS.InvokeAsync<IJSObjectReference>("import", "/ammo-graph/preferences.js?v=21");
+                await _module.InvokeVoidAsync("bindMenus");
+                await _module.InvokeVoidAsync("bindPresentation");
+                var saved = await _module.InvokeAsync<Preferences?>("load");
+                if (saved is not null)
+                {
+                    if (Catalog.Languages.Any(l => l.Code == saved.Language)) Language = saved.Language;
+                    ExcludedCalibers = (saved.ExcludedCalibers ?? []).ToHashSet();
+                    ExcludedAmmo = (saved.ExcludedAmmo ?? []).ToHashSet();
+                    IncludedDefaultAmmo = (saved.IncludedDefaultAmmo ?? []).ToHashSet();
+                    IncludedDefaultCalibers = (saved.IncludedDefaultCalibers ?? []).ToHashSet();
+                    ShowFilters = saved.ShowFilters ?? true; ShowTable = saved.ShowTable ?? true; ShowDetails = saved.ShowDetails ?? true;
+                    Theme = saved.Theme is "light" or "dark" ? saved.Theme : "system";
+                    PersonalCaliberNames = new(StringComparer.OrdinalIgnoreCase);
+                    foreach (var kv in saved.CaliberNames ?? new())
+                        if (kv.Key.Length is >0 and <=128 && !kv.Key.Contains(':') && (kv.Value is null || (!string.IsNullOrWhiteSpace(kv.Value)&&kv.Value.Length<=128))) PersonalCaliberNames[CaliberNameMap.Normalize(kv.Key.Trim())]=kv.Value;
+                    _effectiveNames=null; _personalSnapshot=null;
+                    ApplyDefaultExclusions();
+                    RebuildCalibers();
+                    SelectedCalibers = (saved.Calibers ?? []).Where(id => Calibers.Any(c => c.Id == id)).ToHashSet();
+                    if (saved.LegacyWholeLoad.HasValue)
+                    {
+                        foreach (var id in saved.Calibers ?? [])
+                        {
+                            var derived = id + (saved.LegacyWholeLoad.Value ? ":shot" : ":pellet");
+                            if (Calibers.Any(c => c.Id == derived)) SelectedCalibers.Add(derived);
+                        }
+                    }
+                    if (Snapshot.Metrics.Any(m => m.Key == saved.XAxis)) XAxis = saved.XAxis;
+                    if (Snapshot.Metrics.Any(m => m.Key == saved.YAxis)) YAxis = saved.YAxis;
+                    TooltipColumns = RestoreAttributes(saved.TooltipColumns, true, true); DetailColumns = RestoreAttributes(saved.DetailColumns, true, true);
+                    XColumns = RestoreAttributes((saved.XColumns ?? DefaultAxes).Concat(saved.YColumns ?? DefaultAxes).Distinct().ToArray(), true, true); YColumns = XColumns;
+                    if (saved.XColumns is null && !XColumns.Contains(XAxis)) XColumns.Add(XAxis);
+                    if (saved.YColumns is null && !YColumns.Contains(YAxis)) YColumns.Add(YAxis);
+                    if (XColumns.Count > 0 && !XColumns.Contains(XAxis)) XAxis = XColumns[0];
+                    if (YColumns.Count > 0 && !YColumns.Contains(YAxis)) YAxis = YColumns[0];
+                    DynamicScale = saved.DynamicScale; ShowNames = saved.ShowNames; ShowPellets = saved.ShowPellets;
+                    Search = (saved.Search ?? "")[..Math.Min(128, (saved.Search ?? "").Length)];
+                    CaliberSearch = (saved.CaliberSearch ?? "")[..Math.Min(128, (saved.CaliberSearch ?? "").Length)];
+                    if (saved.SortKey is "Name" or "Caliber" || Snapshot.Metrics.Any(m => m.Key == saved.SortKey)) SortKey = saved.SortKey;
+                    Descending = saved.Descending; SelectedId = saved.SelectedId;
+                    var savedColumns = (saved.Columns ?? DefaultColumns).Where(ColumnKeys.Contains).ToHashSet();
+                    TableColumns = savedColumns.Count > 0 ? savedColumns : DefaultColumns.ToHashSet();
+                    if (!TableColumns.Contains(SortKey)) { SortKey = OrderedColumns.First(); Descending = false; }
+                    FilterChanged();
+                }
+                _preferencesLoaded = true;
+                _save = true;
+                StateHasChanged();
+            }
+            if (_save && _module is not null)
+            {
+                _save = false;
+                await _module.InvokeAsync<bool>("save", new Preferences(Language, SelectedCalibers.Order().ToArray(), XAxis, YAxis, DynamicScale, ShowNames, ShowPellets, Search, CaliberSearch, SortKey, Descending, SelectedId,
+                    Columns: TableColumns.Order().ToArray(), ExcludedCalibers: ExcludedCalibers.Order().ToArray(), ExcludedAmmo: ExcludedAmmo.Order().ToArray(), IncludedDefaultAmmo: IncludedDefaultAmmo.Order().ToArray(), IncludedDefaultCalibers: IncludedDefaultCalibers.Order().ToArray(), ShowFilters: ShowFilters, ShowTable: ShowTable, ShowDetails: ShowDetails, TooltipColumns: TooltipColumns.ToArray(), DetailColumns: DetailColumns.ToArray(), XColumns: XColumns.ToArray(), YColumns: YColumns.ToArray(), Theme: Theme, CaliberNames: PersonalCaliberNames));
+            }
+            if (_module is not null) await _module.InvokeVoidAsync("syncChart");
+            if (_module is not null) await _module.InvokeVoidAsync("syncPresentation");
+        }
+        catch (JSDisconnectedException) { }
+        catch (JSException) { /* Preferences are optional; the graph remains usable without browser storage. */ }
+    }
+    private void Changed() { _save = true; FilterChanged(); }
+    private void FilterChanged() { var visible = VisibleItems; if (SelectedId is not null && !visible.Any(a => a.Id == SelectedId)) SelectedId = null; if (HoveredId is not null && !visible.Any(a => a.Id == HoveredId)) HoveredId = null; }
+    private void Toggle(string id) { if (!SelectedCalibers.Add(id)) SelectedCalibers.Remove(id); Changed(); }
+    private void LegendClick(MouseEventArgs e, string id) { if (e.Detail <= 1) Toggle(id); }
+    private void SelectOnly(string id) { SelectedCalibers = [id]; Changed(); }
+    private void SelectAll() { SelectedCalibers.UnionWith(AvailableCalibers.Select(c => c.Id)); Changed(); }
+    private void SelectNone() { SelectedCalibers.Clear(); Changed(); }
+    private void SwapAxes() { (XAxis, YAxis) = (YAxis, XAxis); if (!XColumns.Contains(XAxis)) XColumns.Add(XAxis); if (!YColumns.Contains(YAxis)) YColumns.Add(YAxis); Changed(); }
+    private void Select(string id) { SelectedId = id; HoveredId = null; _save = true; }
+    private void SelectGroup(AmmoEntry[] members) => Select(members[(Array.FindIndex(members, a => a.Id == SelectedId) + 1) % members.Length].Id);
+    private void Hover(string id) => HoveredId = id;
+    private void HoverGroup(AmmoEntry[] members) { TooltipItems = members; HoveredId = (members.FirstOrDefault(a => a.Id != SelectedId) ?? members[0]).Id; }
+    private void ClearHover() => HoveredId = null;
+    private void PointKey(KeyboardEventArgs e, AmmoEntry[] members) { if (e.Key is "Enter" or " ") SelectGroup(members); }
+    private void Sort(string key) { Descending = SortKey == key && !Descending; SortKey = key; _save = true; }
+    private IEnumerable<AmmoEntry> SortItems(IEnumerable<AmmoEntry> items) => SortKey is "Name" or "Caliber"
+        ? Descending ? items.OrderByDescending(a => SortKey == "Name" ? a.Name : a.Caliber, StringComparer.OrdinalIgnoreCase) : items.OrderBy(a => SortKey == "Name" ? a.Name : a.Caliber, StringComparer.OrdinalIgnoreCase)
+        : Descending ? items.OrderByDescending(a => Value(a, SortKey)) : items.OrderBy(a => Value(a, SortKey));
+    private AmmoMetric Metric(string key) => Snapshot.Metrics.First(m => m.Key == key);
+    private string AxisLabel(string key) => Metric(key).DisplayLabel;
+    private double? Value(AmmoEntry ammo, string key) => SnapshotBuilder.Value(ammo, key);
+    private string Display(AmmoEntry ammo, string key) => Value(ammo, key) is { } value ? Format(value) + (Metric(key).Unit.Length == 0 ? "" : " " + Metric(key).Unit) : "—";
+    private string Format(double value) => value.ToString(value != 0 && Math.Abs(value) < 0.001 ? "G3" : "0.###", T.Culture);
+    private static string F(double value) => value.ToString("0.###", CultureInfo.InvariantCulture);
+    private int Index(string id) => Array.IndexOf(Calibers.Select(c => c.Id).Order(StringComparer.Ordinal).ToArray(), id);
+    private int Shape(string id) => Math.Max(0, Index(id)) % 10;
+    private string Color(string id) => Colors[Math.Max(0, Index(id)) % Colors.Length];
+    private string ShortName(AmmoEntry ammo) => ammo.Name.Length > 28 ? ammo.Name[..26] + "…" : ammo.Name;
+    private string PointTitle(AmmoEntry[] members) => string.Join("\n", members.Select(a => $"{a.Name} · {a.Caliber}\n{Metric(XAxis).DisplayLabel}: {Display(a, XAxis)} · {Metric(YAxis).DisplayLabel}: {Display(a, YAxis)}"));
+    private ChartAxis Range(IEnumerable<AmmoEntry> items, string key) => ChartAxis.Create(items.Select(a => Value(a, key)).Where(v => v.HasValue).Select(v => v!.Value));
+    public async ValueTask DisposeAsync()
+    {
+        if (_module is not null) { try { await _module.InvokeVoidAsync("destroyChart"); await _module.InvokeVoidAsync("unbindMenus"); await _module.InvokeVoidAsync("unbindPresentation"); await _module.DisposeAsync(); } catch (JSDisconnectedException) { } }
+    }
+}

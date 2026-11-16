@@ -1,0 +1,31 @@
+import {chromium} from 'playwright';
+import assert from 'node:assert/strict';
+import {writeFile} from 'node:fs/promises';
+const browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true}),passed=[];
+const url='https://localhost:6969/AmmoGraph';
+try{
+    const cold=await browser.newContext({ignoreHTTPSErrors:true,javaScriptEnabled:false,viewport:{width:1600,height:1100}}),p=await cold.newPage();
+    const cssRequests=[];p.on('request',r=>{if(r.url().includes('/ammo-graph/graph.css'))cssRequests.push(r.url());});
+    const response=await p.goto(url,{waitUntil:'networkidle'}),html=await response.text();
+    assert.ok(html.indexOf('data-ammo-graph-styles')>=0&&html.indexOf('data-ammo-graph-styles')<html.indexOf('class="ag-app"'));
+    assert.equal(await p.locator('.ag-workspace').evaluate(e=>getComputedStyle(e).display),'grid');
+    assert.ok((await p.locator('.ag-chart-panel').evaluate(e=>getComputedStyle(e).backgroundImage)).includes('linear-gradient'));
+    assert.deepEqual(cssRequests,[]);passed.push('Full graph styles are present before the server-rendered page, even with JavaScript disabled and no CSS fetch');
+    await p.screenshot({path:'AmmoGraph/artifacts/initial-styled-v15.png'});await cold.close();
+    const context=await browser.newContext({ignoreHTTPSErrors:true}),page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
+    await page.goto(url,{waitUntil:'networkidle'});await page.locator('.ag-app[data-ready="true"]').waitFor();
+    await page.locator('.ag-exclusions>summary').click();
+    assert.equal(await page.locator('#ag-settings-title').innerText(),'Einstellungen');
+    assert.ok((await page.locator('#ag-exclusion-title').innerText()).startsWith('Kaliber und Munition ausblenden'));
+    assert.ok(await page.locator('#ag-exclusion-title').evaluate(e=>e.parentElement.matches('[data-settings-section="exclusions"]')&&e.nextElementSibling.matches('.ag-exclusion-toolbar')));
+    assert.equal(await page.locator('[data-settings-section="view"]').evaluate(e=>getComputedStyle(e).borderBottomWidth),'1px');
+    assert.equal(await page.locator('.ag-attribute-settings').evaluate(e=>getComputedStyle(e).borderTopWidth),'0px');
+    passed.push('Settings title is at the top, exclusion heading and count are beside their section, with a single View separator');
+    await page.keyboard.press('Escape');
+    for(const [id,name] of [['Caliber93x64','9.3x64'],['Caliber792x57','7.92x57']])assert.equal(await page.locator(`.ag-caliber[data-caliber="${id}"]>span`).innerText(),name);
+    const search=page.locator('.ag-sidebar>.ag-input');await search.fill('9.3×64');
+    await page.waitForFunction(()=>document.querySelectorAll('.ag-caliber').length===1);
+    assert.equal(await page.locator('.ag-caliber>span').innerText(),'9.3x64');
+    passed.push('Existing multiplication-sign map keys load correctly and searches accept both x and ×');
+    assert.deepEqual(errors,[]);await writeFile('AmmoGraph/artifacts/initial-render-results-v15.json',JSON.stringify({passed,errors},null,2));for(const name of passed)console.log('PASS',name);
+}finally{await browser.close();}

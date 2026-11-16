@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Version>0.21.0</Version>
+    <SptRuntime Condition="'$(SptRuntime)' == ''">$(MSBuildProjectDirectory)/../SPT_Runtime</SptRuntime>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources/*.json" />
+    <EmbeddedResource Include="wwwroot/graph.css" />
+    <Compile Remove="tools/**;tests/**" />
+    <Content Remove="tools/**;tests/**" />
+    <None Remove="tools/**;tests/**" />
+    <Reference Include="SPTarkov.Server.Core"><HintPath>$(SptRuntime)/SPTarkov.Server.Core.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="SPTarkov.Server.Web"><HintPath>$(SptRuntime)/SPTarkov.Server.Web.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="SPTarkov.DI"><HintPath>$(SptRuntime)/SPTarkov.DI.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="SPTarkov.Common"><HintPath>$(SptRuntime)/SPTarkov.Common.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="SemanticVersioning"><HintPath>$(SptRuntime)/SemanticVersioning.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,23 @@
+<span class="ag-base-value">@Display(Baseline)</span>
+@if (Candidate is not null && Candidate.Id != Baseline.Id)
+{
+    var comparison = AmmoComparison.Create(Baseline, Candidate, Metric.Key);
+    <span class="ag-comparison-value" data-metric="@Metric.Key" data-delta="@(comparison?.Delta.ToString(CultureInfo.InvariantCulture))">
+        <span class="ag-candidate-value">@Display(Candidate)</span>
+        @if (comparison is not null)
+        {
+            <span class="ag-delta @comparison.Tone" aria-label="@ToneLabel(comparison)">@comparison.Arrow @(comparison.Delta > 0 ? "+" : "")@Number(comparison.Delta) @Metric.Unit</span>
+        }
+        else { <span class="ag-delta neutral">—</span> }
+    </span>
+}
+else { <span class="ag-comparison-value ag-comparison-placeholder" aria-hidden="true">&#160;</span> }
+@code {
+    [Parameter, EditorRequired] public AmmoEntry Baseline { get; set; } = null!;
+    [Parameter] public AmmoEntry? Candidate { get; set; }
+    [Parameter, EditorRequired] public AmmoMetric Metric { get; set; } = null!;
+    [Parameter, EditorRequired] public UiText Text { get; set; } = null!;
+    private string Number(double number) => number.ToString(number != 0 && Math.Abs(number) < 0.001 ? "G3" : "0.###", Text.Culture);
+    private string Display(AmmoEntry ammo) => SnapshotBuilder.Value(ammo, Metric.Key) is { } number ? Number(number) + (Metric.Unit.Length == 0 ? "" : " " + Metric.Unit) : "—";
+    private string ToneLabel(AmmoComparison comparison) => Text[comparison.Tone == "better" ? "Better" : comparison.Tone == "worse" ? "Worse" : comparison.Delta == 0 ? "Same" : "Compare"] + ": " + Number(comparison.Delta);
+}

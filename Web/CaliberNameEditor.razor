@@ -1,0 +1,46 @@
+<details class="ag-settings-section ag-caliber-names" name="ag-settings" data-settings-section="caliber-names">
+    <summary>@Text["CaliberNames"]</summary>
+    <p class="ag-settings-hint">@Text["PersonalNamesHint"]</p>
+    <div class="ag-name-form">
+        <label>@Text["Calibers"]<select id="ag-name-caliber" disabled="@Busy" @bind="CaliberId" @bind:after="SelectCaliber">@foreach (var c in Choices) { <option value="@c.Id">@c.Name · @c.Id</option> }</select></label>
+        <label>@Text["CaliberName"]<input id="ag-name-value" class="ag-input" maxlength="128" @bind="Name" @bind:event="oninput" disabled="@Busy" /></label>
+        <div class="ag-name-actions"><button type="button" class="ag-save-caliber-name" disabled="@(Busy || CaliberId.Length == 0 || string.IsNullOrWhiteSpace(Name))" @onclick="() => Save(false)">@Text["SaveName"]</button><button type="button" class="ag-delete-caliber-name" disabled="@(Busy || CaliberId.Length == 0 || !Names.ContainsKey(CaliberNameMap.Normalize(CaliberId)))" @onclick="() => Save(true)">@Text["DeleteName"]</button><button type="button" class="ag-reset-caliber-names" disabled="@Busy" @onclick="Reset">@Text["RestoreDefaults"]</button></div>
+    </div>
+    <p class="ag-name-status" role="status">@Message</p>
+    <div class="ag-name-list">
+        @foreach (var c in Choices.Where(c => Names.ContainsKey(CaliberNameMap.Normalize(c.Id))))
+        {
+            <button type="button" data-edit-caliber="@c.Id" @onclick="() => Edit(c.Id)"><span>@c.Name</span><small>@c.Id</small></button>
+        }
+    </div>
+</details>
+@code {
+    [Parameter] public IReadOnlyList<AmmoEntry> Items { get; set; } = [];
+    [Parameter] public UiText Text { get; set; } = null!;
+    [Parameter] public IReadOnlyDictionary<string,string> Names { get; set; } = new Dictionary<string,string>();
+    [Parameter] public EventCallback<KeyValuePair<string,string?>> OnSave { get; set; }
+    [Parameter] public EventCallback OnReset { get; set; }
+    private string CaliberId = "", Name = "", MessageKey = "";
+    private string Message => MessageKey.Length == 0 ? "" : Text[MessageKey];
+    private bool Busy;
+    private bool RefreshDraft;
+    private string LastDisplay = "";
+    private string DisplayName(AmmoEntry item) => Names.GetValueOrDefault(CaliberNameMap.Normalize(item.CaliberId.Split(':')[0]))?.Replace('×','x') ?? (item.IsBuckshot ? item.Caliber.Split(" · ")[0] : item.Caliber);
+    private IEnumerable<(string Id,string Name)> Choices => Items.GroupBy(a => a.CaliberId.Split(':')[0]).Select(g => (g.Key,DisplayName(g.First()))).OrderBy(c => c.Item2,StringComparer.OrdinalIgnoreCase);
+    protected override void OnParametersSet()
+    {
+        if (!Choices.Any(c => c.Id == CaliberId)) { CaliberId = Choices.FirstOrDefault().Id ?? ""; SelectCaliber(); }
+        var current = Choices.FirstOrDefault(c => c.Id == CaliberId).Name ?? "";
+        if (RefreshDraft || current != LastDisplay) { Name = LastDisplay = current; RefreshDraft = false; }
+    }
+    private void SelectCaliber() { Name = LastDisplay = Choices.FirstOrDefault(c => c.Id == CaliberId).Name ?? ""; MessageKey = ""; }
+    private void Edit(string id) { if (Busy) return; CaliberId = id; SelectCaliber(); }
+    private async Task Save(bool reset)
+    {
+        Busy = true; MessageKey = "";
+        try { RefreshDraft = true; await OnSave.InvokeAsync(new(CaliberId,reset ? null : Name)); MessageKey = "NameSaved"; }
+        catch (ArgumentException) { MessageKey = "NameSaveFailed"; }
+        finally { Busy = false; }
+    }
+    private async Task Reset() { RefreshDraft = true; await OnReset.InvokeAsync(); MessageKey = "NameSaved"; }
+}

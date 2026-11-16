@@ -1,0 +1,18 @@
+<span class="ag-table-value">@Display</span>
+@if (Reference is not null && Reference.Id != Item.Id)
+{
+    var comparison = AmmoComparison.Create(Reference, Item, Metric.Key);
+    @if (comparison is not null)
+    {
+        <span class="ag-table-delta ag-delta @comparison.Tone" data-delta="@comparison.Delta.ToString(CultureInfo.InvariantCulture)" aria-label="@(Text["Compare"] + " " + Reference.Name)">@comparison.Arrow @(comparison.Delta > 0 ? "+" : "")@Number(comparison.Delta) @Metric.Unit</span>
+    }
+    else { <span class="ag-table-delta ag-delta neutral">—</span> }
+}
+@code {
+    [Parameter, EditorRequired] public AmmoEntry Item { get; set; } = null!;
+    [Parameter] public AmmoEntry? Reference { get; set; }
+    [Parameter, EditorRequired] public AmmoMetric Metric { get; set; } = null!;
+    [Parameter, EditorRequired] public UiText Text { get; set; } = null!;
+    private string Number(double number) => number.ToString(number != 0 && Math.Abs(number) < 0.001 ? "G3" : "0.###", Text.Culture);
+    private string Display => SnapshotBuilder.Value(Item, Metric.Key) is { } number ? Number(number) + (Metric.Unit.Length == 0 ? "" : " " + Metric.Unit) : "—";
+}
