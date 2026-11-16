@@ -58,7 +58,7 @@
             <main class="ag-main">
                 @if (SimulationMode)
                 {
-                    <BallisticsSimulator @key="SimulatorCaliberId" @ref="_simulator" Catalog="Catalog.Simulation" Workspace="SimulatorWorkspace" CaliberId="@SimulatorCaliberId" Ammo="SimulatorAmmo" Text="T" Language="@Language" OnChanged="SimulatorChanged" OnAmmoHover="SimulatorHover" />
+                    <BallisticsSimulator @ref="_simulator" Catalog="Catalog.Simulation" Workspace="SimulatorWorkspace" CaliberId="@SimulatorCaliberId" Ammo="SimulatorAmmo" Text="T" Language="@Language" OnChanged="SimulatorChanged" OnAmmoHover="SimulatorHover" />
                 }
                 else
                 {
@@ -358,7 +358,7 @@
         {
             if (firstRender)
             {
-                _module = await JS.InvokeAsync<IJSObjectReference>("import", "/ammo-graph/preferences.js?v=23.4");
+                _module = await JS.InvokeAsync<IJSObjectReference>("import", "/ammo-graph/preferences.js?v=24.2");
                 await _module.InvokeVoidAsync("bindMenus");
                 await _module.InvokeVoidAsync("bindPresentation");
                 var saved = await _module.InvokeAsync<Preferences?>("load");
@@ -404,8 +404,9 @@
                     if (!TableColumns.Contains(SortKey)) { SortKey = OrderedColumns.First(); Descending = false; }
                     SimulationMode = saved.SimulationMode ?? false;
                     if (saved.Simulator is { } simulator && simulator.CaliberId is { Length: >0 and <=128 }
-                        && simulator.Magazine is { Middle: { Length: <=30 } } && simulator.Slots is { Count: <=64 })
-                    { SimulatorCaliberId = simulator.CaliberId; SimulatorWorkspace.Drafts[SimulatorCaliberId] = simulator; }
+                        && simulator.Magazine is { Capacity: >=1 and <=100, Middle: { Length: <=100 } } && simulator.Slots is { Count: <=64 }
+                        && double.IsFinite(simulator.PelletHitPercent) && simulator.PelletHitPercent is >=0 and <=100)
+                    { SimulatorCaliberId = simulator.CaliberId; SimulatorWorkspace.Update(simulator); }
                     EnsureSimulatorCaliber();
                     FilterChanged();
                 }

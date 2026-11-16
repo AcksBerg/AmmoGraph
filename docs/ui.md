@@ -70,10 +70,14 @@ In the code: [ExclusionEditor](../Web/ExclusionEditor.razor), exclusion state in
 
 ## Ballistics simulator
 
-The header cartridge button replaces the chart, axis controls and selected-ammunition panel with a magazine editor, armor configuration and simulation diagram. The caliber filter becomes a single selection; the table adds Start/Middle/End actions. The graph button restores the previous graph view.
+The header cartridge button replaces the chart, axis controls and selected-ammunition panel with a magazine editor, armor configuration and simulation diagram. Set the capacity from 1–100 rounds (default 30). The caliber filter becomes a single selection; the table adds Start/Middle/End actions. Capacity and equipment stay selected across calibers, and carriers with no replaceable plates are marked **(Only fixed insert)**. For buckshot, choose the average percentage of pellets hitting; at least one hits per shot. The graph button restores the previous graph view.
 
-The diagram combines penetration rate and separate component durability lines on the percentage axis with damage bars on the HP axis. Select a shot for statistical values and a reproducible example. See [the simulator guide](simulation.md) for controls, assumptions and calculation sources.
+The diagram combines penetration rate and separate component durability lines on the percentage axis with damage bars on the HP axis. Shot labels begin at 1, with space before the first bar and after the last so edge markers remain visible. Zoom with the mouse wheel and drag to pan horizontally within that padded range. Both vertical scales remain fully visible, and hover/selection highlights keep their original width at every zoom level. The red vertical line marks the first shot where cumulative mean damage reaches 85 chest HP; **Show shots after death** reveals subsequent shots. Select a shot for statistical values and a reproducible example. See [the simulator guide](simulation.md) for controls, assumptions and calculation sources.
 
 ![Simulation showing penetration rate, separate class-5 plate and class-3 insert durability, damage and an example shot](images/simulation-results.png)
 
 [Full magazine and armor configuration screenshot](images/simulation.png).
+
+[Zoomed chart with constant-width selection and hover highlights](images/simulation-highlight-zoom.png).
+
+![Buckshot simulation with 50% average pellet hits, shared magazine capacity, and mean and example pellet-hit counts](images/simulation-pellets.png)

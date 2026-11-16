@@ -45,6 +45,18 @@ public static class BallisticsEngine
             var bin = u <= .021f ? 0 : u <= .157f ? 1 : u <= .498f ? 2 : u <= .839f ? 3 : u <= .975f ? 4 : 5;
             return -1f + (bin + Next()) / 3f;
         }
+        public int PelletHits(int projectiles, double percentage)
+        {
+            if (projectiles == 1 || percentage <= 100d / projectiles) return 1;
+            if (percentage >= 100) return projectiles;
+            // One guaranteed hit plus independent trials for the other pellets.
+            // Adjust their probability so the requested MEAN is N * percentage / 100.
+            var chance = (projectiles * percentage / 100 - 1) / (projectiles - 1);
+            var hits = 1;
+            for (var pellet = 1; pellet < projectiles; pellet++)
+                if (Next() < chance) hits++;
+            return hits;
+        }
     }
 
     public static SimulationResult Run(SimulationCatalog catalog, SimulationRequest request,
@@ -52,6 +64,8 @@ public static class BallisticsEngine
     {
         if (request.Runs is < 1 or > 10000) throw new SimulationException("SimInvalidRuns");
         var draft = request.Draft;
+        if (!double.IsFinite(draft.PelletHitPercent) || draft.PelletHitPercent is < 0 or > 100)
+            throw new SimulationException("SimInvalidPelletHitRate");
         if (!Enum.IsDefined(draft.Zone)) throw new SimulationException("SimUnsupportedCollider");
         var sequence = draft.Magazine.Expand();
         var ammo = sequence.Select(id => catalog.Ammo.GetValueOrDefault(id) ?? throw new SimulationException("SimMissingAmmo", id)).ToArray();
@@ -74,22 +88,25 @@ public static class BallisticsEngine
         var layers = allLayers.Where(l => l.BodyColliders.Contains(bodyName) || (plateName is not null && l.PlateColliders.Contains(plateName))).ToArray();
         var plateIndices = Enumerable.Range(0, layers.Length).Where(i => plateName is not null && layers[i].PlateColliders.Contains(plateName)).ToArray();
         var bodyIndices = Enumerable.Range(0, layers.Length).Where(i => layers[i].BodyColliders.Contains(bodyName)).ToArray();
-        var penetrationTotals = new int[30];
-        var damageTotals = new double[30];
-        var bluntTotals = new double[30];
-        var durabilityTotals = Enumerable.Range(0, 30).Select(_ => new double[layers.Length]).ToArray();
-        var examples = new ExampleShot[30];
+        var penetrationTotals = new int[sequence.Length];
+        var damageTotals = new double[sequence.Length];
+        var bluntTotals = new double[sequence.Length];
+        var pelletTotals = new int[sequence.Length];
+        var durabilityTotals = Enumerable.Range(0, sequence.Length).Select(_ => new double[layers.Length]).ToArray();
+        var examples = new ExampleShot[sequence.Length];
         var random = new RandomStream(draft.Seed);
+        var hitRandom = new RandomStream(unchecked(draft.Seed ^ 0x51ED270B));
         for (var run = 0; run < request.Runs; run++)
         {
             cancellation.ThrowIfCancellationRequested();
             var durability = layers.Select(l => l.Maximum).ToArray();
-            for (var shotIndex = 0; shotIndex < 30; shotIndex++)
+            for (var shotIndex = 0; shotIndex < sequence.Length; shotIndex++)
             {
                 var round = ammo[shotIndex];
                 var before = run == 0 ? durability.ToArray() : [];
                 var damage = 0f; var blunt = 0f; var penetrated = false; string? blocker = null; var fragments = 0;
-                for (var pellet = 0; pellet < round.Projectiles; pellet++)
+                var pelletHits = hitRandom.PelletHits(round.Projectiles, draft.PelletHitPercent);
+                for (var pellet = 0; pellet < pelletHits; pellet++)
                 {
                     cancellation.ThrowIfCancellationRequested();
                     var p = MathF.Max(0, round.Penetration + random.PenetrationDeviation() * round.Deviation);
@@ -98,8 +115,9 @@ public static class BallisticsEngine
                 if (!float.IsFinite(damage) || !float.IsFinite(blunt)) throw new SimulationException("SimMissingAmmoData", round.Id);
                 penetrationTotals[shotIndex] += penetrated ? 1 : 0;
                 damageTotals[shotIndex] += damage; bluntTotals[shotIndex] += blunt;
+                pelletTotals[shotIndex] += pelletHits;
                 for (var i = 0; i < layers.Length; i++) durabilityTotals[shotIndex][i] += durability[i];
-                if (run == 0) examples[shotIndex] = new(penetrated, damage, blunt, blocker, before, durability.ToArray(), fragments);
+                if (run == 0) examples[shotIndex] = new(penetrated, damage, blunt, blocker, before, durability.ToArray(), fragments, pelletHits);
 
                 void Process(float shotDamage, float shotPen, float fragChance, int stage, bool canFragment)
                 {
@@ -180,8 +198,8 @@ public static class BallisticsEngine
             }
             if ((run + 1) % Math.Max(1, request.Runs / 100) == 0) progress?.Report((run + 1) * 100 / request.Runs);
         }
-        var stats = Enumerable.Range(0, 30).Select(i => new ShotStatistics(i + 1, sequence[i], penetrationTotals[i] * 100d / request.Runs,
-            damageTotals[i] / request.Runs, bluntTotals[i] / request.Runs, durabilityTotals[i].Select(d => d / request.Runs).ToArray(), examples[i])).ToArray();
+        var stats = Enumerable.Range(0, sequence.Length).Select(i => new ShotStatistics(i + 1, sequence[i], penetrationTotals[i] * 100d / request.Runs,
+            damageTotals[i] / request.Runs, bluntTotals[i] / request.Runs, durabilityTotals[i].Select(d => d / request.Runs).ToArray(), examples[i], pelletTotals[i] / (double)request.Runs)).ToArray();
         return new(draft, request.Runs, layers, stats, ["SimAssumptions"]);
     }
 }

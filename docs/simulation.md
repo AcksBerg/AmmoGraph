@@ -10,19 +10,35 @@ The simulator follows AmmoGraph's selected language, including its controls, leg
 
 Select one caliber in the existing filter. The ammunition table supports search and sorting; its **Start**, **Middle** and **End** actions add ammunition to the editor. Searching does not remove configured rounds.
 
-Every magazine contains 30 cartridges in **firing order**, without an additional chambered round:
+Choose a magazine capacity from **1 to 100 cartridges**, with **30** as the default. Entries are in **firing order**, without an additional chambered round:
 
 - **Start:** optional ammunition type and count.
 - **Middle:** ordered groups of ammunition and count. The pattern repeats to fill the available spaces, truncating the last group when necessary.
 - **End:** optional ammunition type and count.
 
-Start and end reserve at most 29 rounds together. A middle pattern is required. Numbered ammunition entries appear on one line with the cartridge dropdown, count and order/remove controls. Use Add ammunition to append an entry. Hover or focus a selected ammunition input, a dropdown choice, or a firing-order entry to see the ammunition tooltip configured in Settings. The preview numbers every shot from 1 to 30. Buckshot entries represent whole cartridges. Personal ammunition and caliber blacklists also apply to the editor dropdowns. Existing recipes containing blocked ammunition cannot run until corrected or unblocked.
+Start and end together must leave at least one round for the middle pattern. Shrinking the capacity trims optional start/end counts to fit, removing them when necessary; a one-round magazine uses the middle pattern alone. Numbered ammunition entries appear on one line with the cartridge dropdown, count and order/remove controls. Use Add ammunition to append an entry. Hover or focus a selected ammunition input, a dropdown choice, or a firing-order entry to see the ammunition tooltip configured in Settings. The preview numbers every shot up to the chosen capacity. Buckshot entries represent whole cartridges. Personal ammunition and caliber blacklists also apply to the editor dropdowns. Existing recipes containing blocked ammunition cannot run until corrected or unblocked.
 
-Changing caliber keeps its draft and result for the lifetime of the page. Browser preferences save the current draft and view; results and other caliber drafts are not persisted across a reload.
+Each caliber keeps its own ammunition pattern for the lifetime of the page. Magazine capacity, pellet hit percentage, carrier, inserts, plate choices (including empty slots), and entry zone are shared across calibers. Changing capacity in one caliber also applies when opening a new caliber or returning to a cached pattern. If necessary, optional start/end blocks are shortened to fit the new capacity. Returning to a pattern uses the current shared settings and recalculates stale results. Browser preferences save the current draft and shared settings; results and other caliber patterns are not persisted across a reload. Older saved magazines without a capacity load with 30 rounds.
+
+## Buckshot accuracy
+
+For calibers containing multi-projectile ammunition, **Average pellet hits (%)** sets the mean percentage of pellets that hit, from 0 to 100. The default is **100%**, preserving the previous behavior. The hit count is sampled separately for each shot and each simulation run. **At least one pellet always hits**, even at 0%. Single-projectile cartridges, including slugs, are unaffected.
+
+For example, an eight-pellet load at 50% averages four hits per shot, while individual shots can hit with fewer or more pellets. A requested average below one pellet uses a one-pellet minimum; for eight pellets, settings below 12.5% therefore still average one hit.
+
+The sampler guarantees one hit and uses independent trials for the remaining pellets, with an adjusted probability so the requested mean is preserved above that minimum:
+
+```text
+expected hits = max(1, pellet count × percentage / 100)
+remaining pellet probability = (expected hits − 1) / (pellet count − 1)
+hits per shot = 1 + binomial(pellet count − 1, remaining pellet probability)
+```
+
+Only hitting pellets affect armor, body damage, penetration statistics, and the mean-damage death marker. They use the same configured impact zone. This is a hit-count model rather than a simulation of spread or individual pellet trajectories. Details show both the **mean pellets hitting** and the actual **pellets hitting** in the reproducible example run. The setting persists across caliber changes and reloads; older preferences without it use 100%.
 
 ## Configure protection
 
-Choose armor or an armored rig from the loaded server templates. Its default preset supplies inserts and plates. Fixed inserts are listed as text with their values; optional plate slots can be emptied. Replacements follow slot filters, including item base-class filters. Each component shows class, material and original maximum durability.
+Choose armor or an armored rig from the loaded server templates. Carriers without replaceable armor slots are marked **(Only fixed insert)** in the English selector. Its default preset supplies inserts and plates. Fixed inserts are listed as text with their values; optional plate slots can be emptied. Replacements follow slot filters, including item base-class filters. Each component shows class, material and original maximum durability.
 
 Choose **Front**, **Back**, **Side · left** or **Side · right**. The model selects one representative impact point: a supported plate collider in that zone, if present, followed by a matching torso collider. It does not average over the vest's area. Components start at full original durability. Skills, elite effects, repair buffs and stimulants are excluded.
 
@@ -30,13 +46,17 @@ The editor initially shows slots for the selected zone. **Show slots from all pr
 
 ## Read the result
 
-Changing simulation parameters automatically evaluates 2,000 complete magazines after a short input pause. Obsolete calculations are cancelled. Armor is reset between magazines and wears down between shots within a magazine. The target has no HP cap or death condition, so all 30 rounds are evaluated.
+Changing simulation parameters automatically evaluates 2,000 complete magazines after a short input pause. Obsolete calculations are cancelled. Armor is reset between magazines and wears down between shots within a magazine. All configured rounds are calculated so that later shots can be inspected without rerunning the simulation.
 
-- X-axis: shot number, with initial armor durability at shot 0.
+A vertical red line marks the first shot at which **cumulative mean immediate damage reaches 85 chest HP**. This is a threshold on the mean damage curve, not a claim that every simulated target dies on that exact shot. Blunt damage is included. By default the diagram stops at this shot; **Show shots after death** reveals the rest of the magazine. No line is drawn if the magazine never reaches 85 HP. Total magazine summaries continue to cover the entire calculated magazine.
+
+Use the mouse wheel to zoom horizontally around the pointer and drag to pan along the shot axis. The +/− buttons zoom around the center; reset or Home restores the full visible range. With the chart focused, +/− zoom and Left/Right pan. Both vertical scales always remain fully visible. Shot labels start at **1**, with half a shot interval of space before the first bar and after the last. This keeps edge bars and the kill marker fully inside the plot. Panning is bounded by that padded range, without additional overscroll. Hover and selection highlights retain their unzoomed screen width; the full enlarged bar remains interactive. Focus an individual shot to select it or navigate between shots. Zoom and pan update locally in the browser; they are preserved when selecting a shot, and reset when the data, displayed range, axes, or language changes.
+
+- X-axis: actual shot number, starting at 1. Durability series show the values after each shot; initial durability remains available in the example's before/after details.
 - Left Y-axis: penetration rate and each component's remaining durability, as a percentage of its original maximum.
 - Right Y-axis: mean immediate body damage per shot in HP, including blunt damage. Total mean magazine damage appears above the diagram.
 
-Penetration rate is the fraction of magazines in which at least one projectile from that cartridge passes the modeled protection and reaches the body. Blunt damage alone does not count. Buckshot projectiles hit the same zone and affect armor separately.
+Penetration rate is the fraction of magazines in which at least one hitting projectile from that cartridge passes the modeled protection and reaches the body. Blunt damage alone does not count. Hitting buckshot pellets strike the same zone and affect armor separately; missed pellets do not affect armor or damage.
 
 Click or focus a shot marker, or use the previous/next controls. Details show the statistical mean and one actual example run, including the blocking component, damage and durability before/after the shot. Legend buttons hide or show series.
 
@@ -70,7 +90,7 @@ The startup catalog captures ammunition, armor, presets, slot filters, class res
 
 The simulator displays these assumptions:
 
-- Every projectile hits the same entry zone perpendicularly. Flight distance, weapon velocity modifiers, spread, angle-dependent ricochets and missed plates are not simulated.
+- Each hitting projectile strikes the same entry zone perpendicularly. The selected pellet percentage controls the number of hitting pellets. Flight distance, weapon velocity modifiers, geometric spread, angle-dependent ricochets and missed plates are not simulated.
 - Plate-prefab geometry and additional material coefficients are unavailable in server tables. The plate is treated as an ideal surface with no extra prefab material loss beyond armor damping, affecting continuation toward another collider.
 - Fragment creation at a plate exit follows the modeled branch and divides damage/penetration by the original maximum fragment count. The model ends at first body impact: no speculative fragment damage bonus, exit-side hit or bleeding damage over time is added.
 - The seeded generator approximates the inspected bounded penetration distribution and preserves within-event correlations. It is not Unity's exact generator or finite random table.

@@ -26,13 +26,15 @@ The configuration flow represents read access by the mod. Personal changes in th
 
 The simulator adds `SimulationCatalog`, captured in the same startup hook from templates, presets and globals. `SimulatorDraft` contains caliber, `MagazineRecipe`, armor ID, slot choices, zone and seed. `SimulationRequest` supplies that draft and a run count to the server-side `BallisticsEngine`; `SimulationResult` contains per-shot means, component durability and an example trace. There is no simulation REST API or client bridge. Optional `simulationMode` and `simulator` preferences keep older cookies compatible. See [the simulator guide](simulation.md).
 
+`SimulatorWorkspace` shares magazine capacity, equipment, and `SimulatorDraft.PelletHitPercent` across calibers while retaining separate ammunition patterns. Capacity ranges from 1–100. The pellet percentage ranges from 0–100 and defaults to 100 in older preferences. `ShotStatistics.MeanPelletHits` reports the sampled mean; `ExampleShot.PelletHits` reports the example's actual count. Only hitting projectiles are processed by the damage and armor calculations, with a minimum of one hit per cartridge.
+
 ## 2. SPT registration
 
 Sources: [Metadata.cs](../Metadata.cs), [AmmoCatalog.cs](../Core/AmmoCatalog.cs).
 
 | Contract | Implementation | Purpose |
 | --- | --- | --- |
-| `IModMetadata` | `Metadata` | Mod ID, name, version `0.23.6`, license, and SPT range `>=4.1.6 <4.2.0`. |
+| `IModMetadata` | `Metadata` | Mod GUID `com.acksberg.ammograph`, name `AmmoGraph`, version `0.24.3`, MIT license, and SPT compatibility `>=4.1.4`. |
 | `IModBlazorMetadata` | `WWWRootUrl = "ammo-graph"`, `HomePage = "/AmmoGraph"` | SPT serves the web assets and links to the mod page. |
 | `IOnLoad` | `AmmoCatalog.OnLoadAsync(CancellationToken)` | Build the dataset once during server startup. |
 | `[Injectable(...)]` | `Singleton`, priority `int.MaxValue` | One shared catalog, running after ordinary earlier startup hooks. |

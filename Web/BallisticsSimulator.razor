@@ -1,14 +1,20 @@
 @implements IDisposable
 @inject Microsoft.Extensions.Logging.ILogger<BallisticsSimulator> Logger
 <section class="ag-simulator" aria-label="@Text["SimTitle"]" data-simulator data-caliber="@CaliberId" data-running="@Running.ToString().ToLowerInvariant()" data-completed="@Completed">
-    <div class="ag-sim-heading"><div><h1>@Text["SimTitle"]</h1><p>@Text["SimModel"]</p></div><span class="ag-count">30 @Text["SimRounds"]</span></div>
+    <div class="ag-sim-heading"><div><h1>@Text["SimTitle"]</h1><p>@Text["SimModel"]</p></div><span class="ag-count">@Draft.Magazine.Capacity @Text["SimRounds"]</span></div>
     <details class="ag-sim-assumptions"><summary>@Text["SimModelDetails"]</summary><p>@Text["SimAssumptions"]</p></details>
     <fieldset class="ag-sim-configuration">
         <legend class="ag-sr-only">@Text["SimConfiguration"]</legend>
         <section class="ag-magazine-editor">
             <h2>@Text["SimMagazine"]</h2>
-            <MagazineBlockEditor Block="Draft.Magazine.Start" Optional="true" Title="@Text["SimStart"]" Ammo="Ammo" Text="Text" OnAmmoHover="OnAmmoHover" OnChange="v => SetRecipe(Draft.Magazine with { Start = v })" />
-            <div class="ag-middle-heading"><h3>@Text["SimMiddle"]</h3><button type="button" data-add-middle disabled="@(Ammo.Length == 0 || Draft.Magazine.Middle.Length >= 30)" @onclick="AddMiddle">+ @Text["SimAddGroup"]</button></div>
+            <label class="ag-magazine-capacity">@Text["SimMagazineSize"]<input data-magazine-capacity type="number" min="1" max="100" step="1" @bind:get="Draft.Magazine.Capacity" @bind:set="SetCapacity" /></label>
+            @if (HasPellets)
+            {
+                <label class="ag-magazine-capacity">@Text["SimPelletHitRate"]<input data-pellet-hit-rate type="number" min="0" max="100" step="0.1" @bind:get="Draft.PelletHitPercent" @bind:set="SetPelletHitPercent" /></label>
+                <p class="ag-sim-hint">@Text["SimPelletHitHint"]</p>
+            }
+            <MagazineBlockEditor Block="Draft.Magazine.Start" Capacity="Draft.Magazine.Capacity" Optional="true" Title="@Text["SimStart"]" Ammo="Ammo" Text="Text" OnAmmoHover="OnAmmoHover" OnChange="v => SetRecipe(Draft.Magazine with { Start = v })" />
+            <div class="ag-middle-heading"><h3>@Text["SimMiddle"]</h3><button type="button" data-add-middle disabled="@(Ammo.Length == 0 || Draft.Magazine.Middle.Length >= 100)" @onclick="AddMiddle">+ @Text["SimAddGroup"]</button></div>
             @for (var i = 0; i < Draft.Magazine.Middle.Length; i++)
             {
                 var index = i;
@@ -18,7 +24,7 @@
                 </div>
             }
             @if (Draft.Magazine.Middle.Length == 0) { <p class="ag-sim-hint">@Text["SimMiddleHint"]</p> }
-            <MagazineBlockEditor Block="Draft.Magazine.End" Optional="true" Title="@Text["SimEnd"]" Ammo="Ammo" Text="Text" OnAmmoHover="OnAmmoHover" OnChange="v => SetRecipe(Draft.Magazine with { End = v })" />
+            <MagazineBlockEditor Block="Draft.Magazine.End" Capacity="Draft.Magazine.Capacity" Optional="true" Title="@Text["SimEnd"]" Ammo="Ammo" Text="Text" OnAmmoHover="OnAmmoHover" OnChange="v => SetRecipe(Draft.Magazine with { End = v })" />
         </section>
         <section class="ag-armor-editor">
             <h2>@Text["SimArmor"]</h2>
@@ -26,7 +32,7 @@
             <label>@Text["SimArmor"]<select @key="(Language, ArmorSearch)" data-armor value="@(Draft.ArmorId ?? "")" @onchange="ArmorChanged">
                 <option value="">@Text["SimUnarmored"]</option>
                 @foreach (var armor in Catalog.Carriers.Values.Where(a => a.Id == Draft.ArmorId || AmmoSearch.Matches(ArmorSearch, Catalog.Name(a.Id, Language))).OrderBy(a => Catalog.Name(a.Id, Language), StringComparer.CurrentCultureIgnoreCase))
-                { <option value="@armor.Id">@Catalog.Name(armor.Id, Language)</option> }
+                { <option value="@armor.Id">@Catalog.Name(armor.Id, Language)@(armor.OnlyFixedInsert ? " (" + Text["SimOnlyFixedInsert"] + ")" : "")</option> }
             </select></label>
             <ArmorFilters Parts="AvailableProtection" Classes="FilterClasses" Materials="FilterMaterials" Text="Text" MaterialName="MaterialName" OnChanged="FiltersChanged" />
             <label>@Text["SimZone"]<select data-zone value="@Draft.Zone" @onchange="ZoneChanged">
@@ -91,6 +97,7 @@
     [Parameter] public EventCallback OnChanged { get; set; }
     [Parameter] public EventCallback<string> OnAmmoHover { get; set; }
     private SimulatorDraft Draft => Workspace.Get(CaliberId);
+    private bool HasPellets => Ammo.Any(a => Catalog.Ammo.TryGetValue(a.TemplateId, out var ammo) && ammo.Projectiles > 1);
     private bool RecipeAllowed => Preview is { } sequence && sequence.All(id => Ammo.Any(a => a.TemplateId == id));
     private SimulationResult? Result => RecipeAllowed ? Workspace.Results.GetValueOrDefault(CaliberId) : null;
     private ArmorCarrier? Carrier => Draft.ArmorId is { } id ? Catalog.Carriers.GetValueOrDefault(id) : null;
@@ -151,11 +158,18 @@
         ? $"{Text["SimClass"]} {p.Class} · {MaterialName(p.Material)} · {p.Maximum.ToString("0.#", Text.Culture)} / {p.Maximum.ToString("0.#", Text.Culture)}" : Text["SimMissingArmor"];
     private async Task Change(SimulatorDraft draft)
     {
-        Cancel(); Workspace.Drafts[CaliberId] = draft; ErrorKey = null; ErrorDetail = null;
+        Cancel(); Workspace.Update(draft); ErrorKey = null; ErrorDetail = null;
         await OnChanged.InvokeAsync();
         Schedule();
     }
     private Task SetRecipe(MagazineRecipe recipe) => Change(Draft with { Magazine = recipe });
+    private Task SetCapacity(int count)
+    {
+        count = Math.Clamp(count, 1, 100);
+        return SetRecipe(Draft.Magazine.WithCapacity(count));
+    }
+    private Task SetPelletHitPercent(double percent) => double.IsFinite(percent)
+        ? Change(Draft with { PelletHitPercent = Math.Clamp(percent, 0, 100) }) : Task.CompletedTask;
     private Task AddMiddle() => Ammo.Length > 0 ? SetRecipe(Draft.Magazine with { Middle = [..Draft.Magazine.Middle, new(Ammo[0].TemplateId, 1)] }) : Task.CompletedTask;
     private Task SetMiddle(int index, AmmoBlock? block) => SetRecipe(Draft.Magazine with { Middle = Draft.Magazine.Middle.Where((_, i) => i != index || block is not null).Select((b, i) => i == index && block is not null ? block : b).ToArray() });
     private Task Move(int index, int direction)
@@ -172,7 +186,7 @@
         {
             "start" => recipe with { Start = new(id, recipe.Start?.Count ?? 1) },
             "end" => recipe with { End = new(id, recipe.End?.Count ?? 1) },
-            _ => recipe.Middle.Length < 30 ? recipe with { Middle = [..recipe.Middle, new(id, 1)] } : recipe
+            _ => recipe.Middle.Length < 100 ? recipe with { Middle = [..recipe.Middle, new(id, 1)] } : recipe
         });
     }
     private Task ArmorChanged(ChangeEventArgs e)

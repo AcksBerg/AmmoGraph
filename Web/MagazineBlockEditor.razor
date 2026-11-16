@@ -13,13 +13,14 @@
                 { <button type="button" role="option" aria-selected="@(ammo.TemplateId == block.TemplateId)" class="ag-ammo-tooltip-target" data-ammo-choice data-id="@ammo.TemplateId" @onmouseenter="() => OnAmmoHover.InvokeAsync(ammo.TemplateId)" @onfocus="() => OnAmmoHover.InvokeAsync(ammo.TemplateId)" @onclick="() => Change(block with { TemplateId = ammo.TemplateId })">@ammo.Name</button> }
             </div>
         </details>
-        <input type="number" min="1" max="@(Optional ? 29 : 30)" step="1" aria-label="@($"{Title} {Text["SimCount"]}")" value="@block.Count" @onchange="e => Change(block with { Count = int.TryParse(e.Value?.ToString(), out var n) ? n : 0 })" />
+        <input type="number" min="1" max="@(Optional ? Math.Max(0, Capacity - 1) : 100)" step="1" aria-label="@($"{Title} {Text["SimCount"]}")" value="@block.Count" @onchange="e => Change(block with { Count = int.TryParse(e.Value?.ToString(), out var n) ? n : 0 })" />
     }
 </div>
 @code {
     [Parameter] public AmmoBlock? Block { get; set; }
     [Parameter] public bool Optional { get; set; }
     [Parameter] public bool Inline { get; set; }
+    [Parameter] public int Capacity { get; set; } = 30;
     [Parameter] public string Title { get; set; } = "";
     [Parameter] public AmmoEntry[] Ammo { get; set; } = [];
     [Parameter] public UiText Text { get; set; } = null!;

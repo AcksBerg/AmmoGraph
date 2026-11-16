@@ -19,9 +19,13 @@ AssemblyLoadContext.Default.Resolving += (_, name) => File.Exists(Path.Combine(r
 var json = new JsonUtil([new SptJsonConverterRegistrator()]);
 var templates = json.DeserializeFromFile<Dictionary<string, TemplateItem>>(Path.Combine(runtime, "SPT_Data/database/templates/items.json"))!;
 var globals = json.DeserializeFromFile<GlobalTable>(Path.Combine(runtime, "SPT_Data/database/globals.json"))!;
-var languages = new[] { "en", "de" };
-var locales = languages.ToDictionary(l => l, l => (IReadOnlyDictionary<string, string>)json.DeserializeFromFile<Dictionary<string, string>>(
-    Path.Combine(runtime, "SPT_Data/database/locales/global/" + SnapshotBuilder.GameLocale(l) + ".json"))!);
+using var uiLanguages = System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path.Combine(root, "AmmoGraph/Resources/ui.json")));
+var languages = uiLanguages.RootElement.GetProperty("ui").EnumerateObject().Select(p => p.Name).ToArray();
+var locales = languages.ToDictionary(l => l, l =>
+{
+    var path = Path.Combine(runtime, "SPT_Data/database/locales/global/" + SnapshotBuilder.GameLocale(l) + ".json");
+    return (IReadOnlyDictionary<string, string>)(File.Exists(path) ? json.DeserializeFromFile<Dictionary<string, string>>(path)! : new());
+});
 var names = CaliberNameMap.Defaults;
 var rules = DefaultExclusions.Defaults;
 var snapshots = languages.ToFrozenDictionary(l => l, l => SnapshotBuilder.Build(templates.Values, l, locales[l], locales["en"], exclusionRules: rules));
@@ -33,7 +37,7 @@ void Field(string name, object value) => typeof(AmmoCatalog).GetField(name, Bind
 Field("_baseSnapshots", snapshots);
 Field("_snapshots", snapshots.ToFrozenDictionary(p => p.Key, p => SnapshotBuilder.RenameCalibers(p.Value, names)));
 Property("Snapshot", SnapshotBuilder.RenameCalibers(snapshots["de"], names));
-Property("Languages", (IReadOnlyList<LanguageChoice>)new LanguageChoice[] { new("de", "Deutsch"), new("en", "English") });
+Property("Languages", (IReadOnlyList<LanguageChoice>)languages.Select(l => new LanguageChoice(l, UiText.NativeName(l))).ToArray());
 Property("CaliberNames", names); Property("ExclusionRules", rules);
 Property("Simulation", SimulationCatalog.Build(templates.Values, globals, locales)); Property("Ready", true);
 

@@ -8,9 +8,11 @@ function validSimulator(value) {
     return value == null || (id(value.caliberId) && (value.armorId == null || id(value.armorId))
         && Number.isInteger(value.seed) && value.seed >= -2147483648 && value.seed <= 2147483647
         && Number.isInteger(value.zone) && value.zone >= 0 && value.zone <= 3
+        && (value.pelletHitPercent == null || (typeof value.pelletHitPercent === 'number' && Number.isFinite(value.pelletHitPercent) && value.pelletHitPercent >= 0 && value.pelletHitPercent <= 100))
         && value.magazine && (value.magazine.start == null || block(value.magazine.start))
         && (value.magazine.end == null || block(value.magazine.end))
-        && Array.isArray(value.magazine.middle) && value.magazine.middle.length <= 30 && value.magazine.middle.every(block)
+        && (value.magazine.capacity == null || (Number.isInteger(value.magazine.capacity) && value.magazine.capacity >= 1 && value.magazine.capacity <= 100))
+        && Array.isArray(value.magazine.middle) && value.magazine.middle.length <= 100 && value.magazine.middle.every(block)
         && value.slots && typeof value.slots === 'object' && !Array.isArray(value.slots)
         && Object.keys(value.slots).length <= 64 && Object.entries(value.slots).every(([k,v]) => id(k) && (v == null || id(v))));
 }

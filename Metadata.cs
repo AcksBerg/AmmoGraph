@@ -8,11 +8,11 @@ namespace AmmoGraph;
 public record Metadata : IModMetadata, IModBlazorMetadata
 {
     public string ModGuid { get; init; } = "com.acksberg.ammograph";
-    public string Name { get; init; } = "Ammo Graph";
+    public string Name { get; init; } = "AmmoGraph";
     public string Author { get; init; } = "AcksBerg";
     public List<string>? Contributors { get; init; }
-    public Version Version { get; init; } = new("0.23.6");
-    public Range SptVersion { get; init; } = new(">=4.1.6 <4.2.0");
+    public Version Version { get; init; } = new("0.24.3");
+    public Range SptVersion { get; init; } = new(">=4.1.4");
     public bool HasPrepatcher { get; init; } = false;
     public List<string>? Incompatibilities { get; init; }
     public Dictionary<string, Range>? ModDependencies { get; init; }

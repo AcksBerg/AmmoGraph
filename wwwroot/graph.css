@@ -1035,14 +1035,24 @@ the surrounding SPT web panel is unchanged. */
 .ag-sim-legend button { text-align:start; }
 .ag-sim-legend .ag-symbol { flex-shrink:0; text-align:center; }
 .ag-sim-chart-scroll { overflow-x:auto; }
+.ag-sim-chart-controls { display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin:10px 0; font-size:12px; }
+.ag-sim-chart-controls label { display:flex; align-items:center; gap:7px; }
+.ag-sim-chart-controls .ag-navigation-controls { margin-inline-start:auto; }
+.ag-sim-death-caption { color:var(--muted); }
+.ag-sim-death-line { stroke:#e34242; stroke-width:2.5; stroke-dasharray:6 3; vector-effect:non-scaling-stroke; pointer-events:none; }
+.ag-magazine-capacity { display:flex; align-items:center; gap:12px; margin-bottom:12px; font-size:12px; }
+.ag-magazine-capacity input { width:80px; }
+.ag-simulation-chart { touch-action:none; user-select:none; cursor:grab; }
+.ag-simulation-chart.ag-interacting { cursor:grabbing; }
 .ag-simulation-chart { display:block; width:100%; min-width:600px; overflow:visible; }
 .ag-simulation-chart text { fill:var(--muted); font-size:12px; }
-.ag-sim-series { fill:none; stroke-width:2.2; vector-effect:non-scaling-stroke; pointer-events:none; }
+.ag-sim-series { fill:none; stroke-width:2.2; stroke-linecap:round; vector-effect:non-scaling-stroke; pointer-events:none; }
 .ag-sim-chance { stroke-width:3; }
 .ag-sim-damage-bar { fill:var(--gold); opacity:.4; }
 .ag-sim-shot rect { fill:transparent; stroke:none; cursor:pointer; }
 .ag-sim-shot circle { fill:var(--cyan); stroke:var(--panel); stroke-width:1; pointer-events:none; }
-.ag-sim-shot:hover rect,.ag-sim-shot:focus-visible rect,.ag-sim-shot.is-selected rect { fill:#64c8d315; stroke:var(--cyan); stroke-width:1; }
+.ag-sim-shot-highlight { pointer-events:none; vector-effect:non-scaling-stroke; }
+.ag-sim-shot:hover .ag-sim-shot-highlight,.ag-sim-shot:focus-visible .ag-sim-shot-highlight,.ag-sim-shot.is-selected .ag-sim-shot-highlight { fill:#64c8d315; stroke:var(--cyan); stroke-width:1; }
 .ag-sim-shot-details { border:1px solid var(--line); border-radius:8px; padding:12px 16px; font-size:12px; line-height:1.7; }
 .ag-sim-detail-heading h3 { margin:0; }
 .ag-sim-detail-heading>div { display:flex; gap:5px; }

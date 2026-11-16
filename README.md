@@ -1,10 +1,10 @@
 ﻿# SPT Ammo Graph
 
-AmmoGraph is a server mod for **SPT 4.1.6 / .NET 10**. It displays the ammunition loaded by your SPT installation at `/AmmoGraph`, including changes made by other mods that finish before AmmoGraph captures the data during startup.
+AmmoGraph is a server mod for **SPT 4.1.4 and later / .NET 10**. It displays the ammunition loaded by your SPT installation at `/AmmoGraph`, including changes made by other mods that finish before AmmoGraph captures the data during startup. It has been tested in both clean and modded SPT installations.
 
 Filter calibers, plot ammunition statistics, and compare cartridges. The page runs inside the existing SPT web server. No additional client mod, Python export, or separate web server is required.
 
-The header cartridge button opens a ballistics simulator: build a mixed 30-round magazine, configure armor and inserts, and inspect penetration rate, armor wear and damage over 2,000 magazine runs. It models inspected game formulas with loaded server values; client code patches and full Unity hit geometry are outside its scope. See [Ballistics simulator](docs/simulation.md).
+The header cartridge button opens a ballistics simulator: build a mixed magazine of 1–100 rounds (30 by default), configure armor and inserts, and inspect penetration rate, armor wear and damage over 2,000 magazine runs. Magazine capacity and equipment stay selected when changing caliber. Buckshot supports a configurable mean pellet hit percentage, with at least one pellet hitting per shot. The chart supports horizontal zoom and pan within the displayed shot range, keeps both vertical scales fully visible, marks the shot where cumulative mean damage reaches 85 chest HP, and can show or hide subsequent shots. It models inspected game formulas with loaded server values; client code patches and full Unity hit geometry are outside its scope. See [Ballistics simulator](docs/simulation.md).
 
 ![AmmoGraph with caliber filters, a scatter plot, selected ammunition, and a comparison table](docs/images/overview.png)
 
@@ -21,11 +21,11 @@ The header cartridge button opens a ballistics simulator: build a mixed 30-round
 
 The documentation includes architecture, workflow, and interface diagrams. GitHub renders these Mermaid diagrams directly.
 
-Release archives contain the full path `SPT_Runtime/user/mods/AmmoGraph`. Extract them into the directory containing `SPT_Runtime`, with the server stopped. Existing configuration files are not included or overwritten. Build an archive with `./AmmoGraph/build.ps1 -Package`.
+Release archives use **7z** and contain the relative path `SPT_Runtime/user/mods/AmmoGraph`. Copy the archive into your SPT root directory (the directory containing `SPT_Runtime`) and extract it there with the server stopped. Paths work across operating systems. All included files belong to the mod directory; documentation and the license are provided on GitHub. Existing configuration files are not included or overwritten. Build an archive with `./AmmoGraph/build.ps1 -Package`; packaging requires `7zz`, `7z`, or `7za`, or an explicit `-SevenZipPath`.
 
 ## Quick start
 
-Requirements: the .NET 10 SDK and an existing SPT runtime containing the referenced server libraries. The default project paths expect this layout:
+Requirements for building from source: the .NET 10 SDK and an existing SPT runtime containing the referenced server libraries. No additional client plugin or Realism mod is required. The default project paths expect this layout:
 
 ```text
 Workspace/

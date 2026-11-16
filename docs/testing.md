@@ -4,6 +4,8 @@
 
 Run all commands below from the shared workspace directory containing `AmmoGraph` and `SPT_Runtime`. The checks need the existing SPT libraries; browser checks also need a running server.
 
+Release testing has been performed in both clean and modded SPT installations. Declared compatibility starts at SPT 4.1.4.
+
 ## Checking the C# core
 
 ```powershell
@@ -34,6 +36,9 @@ Browsers use fresh temporary contexts, leaving the personal Chrome profile untou
 | --- | --- |
 | General page behavior | `node AmmoGraph/tests/browser.mjs` |
 | Magazine editor, armor, diagram, buckshot and graph restoration | `node AmmoGraph/tests/simulation.mjs` against the separate [simulation test host](simulation.md#implementation-and-validation) |
+| Magazine capacity, equipment across calibers, death marker, zoom/pan and restoration | `node AmmoGraph/tests/simulation-release.mjs` against the same test host |
+| Horizontal-only simulator zoom/pan, fixed vertical scales, shot-1 labels, edge padding, and constant highlight widths | `node AmmoGraph/tests/simulation-horizontal.mjs` (defaults to the live SPT server; `AMMOGRAPH_URL` overrides the address) |
+| Shared magazine capacity, sampled pellet hits, minimum one hit, and preference migration | `node AmmoGraph/tests/simulation-pellets.mjs` (same server selection) |
 | Table, sorting, comparisons | `node AmmoGraph/tests/table.mjs` |
 | Menus, keyboard, percentage display | `node AmmoGraph/tests/menus.mjs` |
 | Zoom, pan, and legend | `node AmmoGraph/tests/navigation.mjs` |

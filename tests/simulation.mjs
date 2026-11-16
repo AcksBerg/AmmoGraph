@@ -119,6 +119,7 @@ try {
     await page.locator('.ag-sim-heading').click();
     await run();
     assert.equal(await page.locator('.ag-sim-cumulative').count(), 0);
+    await page.locator('[data-show-after-death]').check();
     await checkLegend();
     assert.equal(await page.locator('[data-slot="front_plate"] select').inputValue(), '656fae5f7c2d57afe200c0d7', 'Filtering preserves the displayed plate selection');
     await page.locator('.ag-sim-legend button').filter({hasText:'Cumulative damage'}).click();
@@ -202,6 +203,9 @@ try {
     // Whole-cartridge buckshot uses source projectile damage exactly once.
     await page.locator('.ag-caliber[data-caliber="Caliber12g"] input').check();
     await page.locator('[data-simulator][data-caliber="Caliber12g"]').waitFor();
+    assert.equal(await page.locator('[data-armor]').inputValue(), '5e4ac41886f77406a511c9a8', 'Caliber changes retain the carrier');
+    assert.equal(await page.locator('[data-slot="front_plate"] select').inputValue(), '', 'Caliber changes retain empty plate slots');
+    await page.locator('[data-armor]').selectOption('');
     assert.equal(await page.locator('.ag-caliber[data-caliber="Caliber12g:pellet"]').count(), 0);
     assert.equal(await page.locator('.ag-caliber[data-caliber="Caliber12g:shot"]').count(), 0);
     const shotgunRow = rows.filter({ hasText: /buckshot/i }).first();
@@ -245,7 +249,7 @@ try {
     await page.locator('[data-simulator]').waitFor();
     assert.deepEqual(await preview(), order);
     assert.equal(await page.locator('[data-zone]').inputValue(), 'Front');
-    assert.equal(await page.locator('[data-slot="front_plate"] select').inputValue(), '');
+    assert.equal(await page.locator('[data-armor]').inputValue(), '', 'The shared unarmored selection survives reload');
     await run(); // A restored valid draft automatically recalculates.
     await page.locator('[data-view-toggle]').click();
     assert.equal(await page.locator('#ag-x').inputValue(), 'PenetrationPower');
