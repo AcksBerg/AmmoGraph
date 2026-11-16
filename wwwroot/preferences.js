@@ -2,6 +2,18 @@ const key = 'spt-ammo-graph.v2';
 const legacyKey = 'spt-ammo-graph.preferences.v1';
 const options = `; Path=/; Max-Age=31536000; SameSite=Lax${location.protocol === 'https:' ? '; Secure' : ''}`;
 const read = name => document.cookie.split('; ').find(c => c.startsWith(name + '='))?.slice(name.length + 1);
+function validSimulator(value) {
+    const id = v => typeof v === 'string' && v.length > 0 && v.length <= 128;
+    const block = v => v && id(v.templateId) && Number.isInteger(v.count) && Math.abs(v.count) <= 1000;
+    return value == null || (id(value.caliberId) && (value.armorId == null || id(value.armorId))
+        && Number.isInteger(value.seed) && value.seed >= -2147483648 && value.seed <= 2147483647
+        && Number.isInteger(value.zone) && value.zone >= 0 && value.zone <= 3
+        && value.magazine && (value.magazine.start == null || block(value.magazine.start))
+        && (value.magazine.end == null || block(value.magazine.end))
+        && Array.isArray(value.magazine.middle) && value.magazine.middle.length <= 30 && value.magazine.middle.every(block)
+        && value.slots && typeof value.slots === 'object' && !Array.isArray(value.slots)
+        && Object.keys(value.slots).length <= 64 && Object.entries(value.slots).every(([k,v]) => id(k) && (v == null || id(v))));
+}
 function valid(value) {
     return value && Array.isArray(value.calibers) && value.calibers.every(c => typeof c === 'string')
         && typeof value.xAxis === 'string' && typeof value.yAxis === 'string'
@@ -11,6 +23,8 @@ function valid(value) {
         && ['columns', 'excludedCalibers', 'excludedAmmo', 'includedDefaultAmmo', 'includedDefaultCalibers', 'tooltipColumns', 'detailColumns', 'xColumns', 'yColumns'].every(k => value[k] == null || (Array.isArray(value[k]) && value[k].every(s => typeof s === 'string')))
         && ['showFilters', 'showTable', 'showDetails'].every(k => value[k] == null || typeof value[k] === 'boolean')
         && (value.theme == null || ['system', 'light', 'dark'].includes(value.theme))
+        && (value.simulationMode == null || typeof value.simulationMode === 'boolean')
+        && validSimulator(value.simulator)
         && (value.caliberNames == null || (typeof value.caliberNames === 'object' && !Array.isArray(value.caliberNames) && Object.entries(value.caliberNames).every(([k,v]) => k.length>0 && k.length<=128 && (v===null || (typeof v==='string' && v.length<=128)))));
 }
 function encode(value) { return btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(value)))); }
@@ -55,19 +69,19 @@ export function bindMenus() {
     const root = document.querySelector('.ag-app');
     if (!root) return;
     function closeOutside(event) {
-        for (const menu of root.querySelectorAll('details.ag-icon-menu[open]')) {
+        for (const menu of root.querySelectorAll('details.ag-icon-menu[open], .ag-armor-filters details[open], details.ag-ammo-picker[open]')) {
             if (!menu.contains(event.target)) menu.open = false;
         }
     }
     function escape(event) {
         if (event.key !== 'Escape') return;
-        for (const menu of root.querySelectorAll('details.ag-icon-menu[open]')) {
+        for (const menu of root.querySelectorAll('details.ag-icon-menu[open], .ag-armor-filters details[open], details.ag-ammo-picker[open]')) {
             menu.open = false;
             menu.querySelector('summary')?.focus();
         }
     }
     function positionMenu(event) {
-        const menus = event?.type === 'toggle' ? [event.target] : root.querySelectorAll('details.ag-icon-menu[open]');
+        const menus = event?.type === 'toggle' ? [event.target] : root.querySelectorAll('details.ag-icon-menu[open], .ag-armor-filters details[open], details.ag-ammo-picker[open]');
         for (const menu of menus) {
             if (!menu.matches('details.ag-icon-menu') || !menu.open) continue;
             menu.classList.remove('ag-menu-above');
@@ -76,13 +90,34 @@ export function bindMenus() {
             if (innerWidth > 600 && panel.getBoundingClientRect().bottom > innerHeight - 12 && anchor.top > innerHeight - anchor.bottom) menu.classList.add('ag-menu-above');
         }
     }
+    function chooseAmmo(event) { if (event.target.closest?.('[data-ammo-choice]')) { const picker = event.target.closest('details.ag-ammo-picker'); if (picker) picker.open = false; } }
+    function ammoKeys(event) {
+        const picker = event.target.closest?.('details.ag-ammo-picker');
+        if (!picker || !['ArrowDown','ArrowUp','Home','End'].includes(event.key)) return;
+        const choices = [...picker.querySelectorAll('[data-ammo-choice]')];
+        if (!choices.length) return;
+        event.preventDefault();
+        const wasOpen = picker.open;
+        picker.open = true;
+        const current = choices.indexOf(document.activeElement);
+        let index = current;
+        if (!wasOpen || current < 0) index = Math.max(0, choices.findIndex(e => e.getAttribute('aria-selected') === 'true'));
+        else if (event.key === 'ArrowDown') index = Math.min(choices.length - 1, current + 1);
+        else if (event.key === 'ArrowUp') index = Math.max(0, current - 1);
+        if (event.key === 'Home') index = 0;
+        if (event.key === 'End') index = choices.length - 1;
+        choices[index].focus(); choices[index].scrollIntoView({block:'nearest'});
+    }
+    document.addEventListener('keydown', ammoKeys);
+    document.addEventListener('click', chooseAmmo);
     document.addEventListener('pointerdown', closeOutside);
     document.addEventListener('keydown', escape);
     root.addEventListener('toggle', positionMenu, true);
     window.addEventListener('resize', positionMenu);
-    menuCleanup = () => { document.removeEventListener('pointerdown', closeOutside); document.removeEventListener('keydown', escape); root.removeEventListener('toggle', positionMenu, true); window.removeEventListener('resize', positionMenu); };
+    menuCleanup = () => { document.removeEventListener('keydown', ammoKeys); document.removeEventListener('click', chooseAmmo); document.removeEventListener('pointerdown', closeOutside); document.removeEventListener('keydown', escape); root.removeEventListener('toggle', positionMenu, true); window.removeEventListener('resize', positionMenu); };
 }
 export function unbindMenus() { menuCleanup?.(); menuCleanup = undefined; }
-export { syncChart, destroyChart } from './navigation.js?v=6';
-export { bindPresentation, syncPresentation, unbindPresentation, oppositeTheme } from './presentation.js?v=13';
+export { syncChart, destroyChart } from './navigation.js?v=22';
+export { bindPresentation, syncPresentation, unbindPresentation, oppositeTheme } from './presentation.js?v=23.3';
+export { syncFans, destroyFans } from './spiderfy.js?v=22.1';
 

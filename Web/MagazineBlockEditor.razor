@@ -1,0 +1,30 @@
+<div class="ag-magazine-block ag-ammo-tooltip-target @(Inline ? "ag-magazine-inline" : "")" data-id="@Block?.TemplateId" @onmouseenter="() => OnAmmoHover.InvokeAsync(Block?.TemplateId ?? string.Empty)">
+    @if (Optional)
+    {
+        <label class="ag-block-enable"><input type="checkbox" checked="@(Block is not null)" @onchange="Toggle" />@Title</label>
+    }
+    else if (!string.IsNullOrEmpty(Title)) { <span>@Title</span> }
+    @if (Block is { } block)
+    {
+        <details class="ag-ammo-picker">
+            <summary aria-label="@($"{Title} {Text["Ammo"]}")" aria-haspopup="listbox" @onfocus="() => OnAmmoHover.InvokeAsync(block.TemplateId)">@(Ammo.FirstOrDefault(a => a.TemplateId == block.TemplateId)?.Name ?? Text["SimExcludedAmmo"])</summary>
+            <div class="ag-ammo-picker-options" role="listbox" aria-label="@Text["Ammo"]">
+                @foreach (var ammo in Ammo)
+                { <button type="button" role="option" aria-selected="@(ammo.TemplateId == block.TemplateId)" class="ag-ammo-tooltip-target" data-ammo-choice data-id="@ammo.TemplateId" @onmouseenter="() => OnAmmoHover.InvokeAsync(ammo.TemplateId)" @onfocus="() => OnAmmoHover.InvokeAsync(ammo.TemplateId)" @onclick="() => Change(block with { TemplateId = ammo.TemplateId })">@ammo.Name</button> }
+            </div>
+        </details>
+        <input type="number" min="1" max="@(Optional ? 29 : 30)" step="1" aria-label="@($"{Title} {Text["SimCount"]}")" value="@block.Count" @onchange="e => Change(block with { Count = int.TryParse(e.Value?.ToString(), out var n) ? n : 0 })" />
+    }
+</div>
+@code {
+    [Parameter] public AmmoBlock? Block { get; set; }
+    [Parameter] public bool Optional { get; set; }
+    [Parameter] public bool Inline { get; set; }
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public AmmoEntry[] Ammo { get; set; } = [];
+    [Parameter] public UiText Text { get; set; } = null!;
+    [Parameter] public EventCallback<string> OnAmmoHover { get; set; }
+    [Parameter] public EventCallback<AmmoBlock?> OnChange { get; set; }
+    private Task Change(AmmoBlock? block) => OnChange.InvokeAsync(block);
+    private Task Toggle(ChangeEventArgs e) => Change(e.Value is true ? new(Ammo.FirstOrDefault()?.TemplateId ?? "", 1) : null);
+}

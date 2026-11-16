@@ -175,6 +175,7 @@ Check(resetNames.Count==configuredNames.Count && configuredNames.All(kv=>resetNa
 var renamed=SnapshotBuilder.RenameCalibers(snapshot,privateNames);var renamedC=renamed.Items.Single(i=>i.Id==c.Id.ToString());var originalC=snapshot.Items.Single(i=>i.Id==c.Id.ToString());
 Check(renamedC.Caliber=="New x name" && ReferenceEquals(renamedC.Values,originalC.Values) && renamedC.Id==originalC.Id && originalC.Caliber=="5.45x39", "Private renaming preserves captured values, identities and other snapshots");
 Check(SnapshotBuilder.RenameCalibers(snapshot,CaliberNameMap.WithOverrides(configuredNames,new Dictionary<string,string?> { ["NotInstalled"]="Private alias",["545x39"]=" " })).Items.Count==snapshot.Items.Count, "Invalid and unavailable personal names do not create records");
+SimulationChecks.Run();
 Console.WriteLine("All core checks passed.");
 
 static class TestValues

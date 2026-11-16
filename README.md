@@ -4,6 +4,8 @@ AmmoGraph is a server mod for **SPT 4.1.6 / .NET 10**. It displays the ammunitio
 
 Filter calibers, plot ammunition statistics, and compare cartridges. The page runs inside the existing SPT web server. No additional client mod, Python export, or separate web server is required.
 
+The header cartridge button opens a ballistics simulator: build a mixed 30-round magazine, configure armor and inserts, and inspect penetration rate, armor wear and damage over 2,000 magazine runs. It models inspected game formulas with loaded server values; client code patches and full Unity hit geometry are outside its scope. See [Ballistics simulator](docs/simulation.md).
+
 ![AmmoGraph with caliber filters, a scatter plot, selected ammunition, and a comparison table](docs/images/overview.png)
 
 ## Documentation
@@ -11,12 +13,15 @@ Filter calibers, plot ammunition statistics, and compare cartridges. The page ru
 | I want to … | Read |
 | --- | --- |
 | use and configure the application | [Usage and configuration](docs/usage.md) |
+| build magazines and simulate armor damage | [Ballistics simulator](docs/simulation.md) |
 | explore each part of the interface through screenshots | [Interface tour](docs/ui.md) |
 | understand the code as a new developer | [Developer guide](docs/development.md) |
 | look up data flows, interfaces, and storage formats | [Interface reference](docs/interfaces.md) |
 | run checks or update screenshots | [Testing and documentation maintenance](docs/testing.md) |
 
 The documentation includes architecture, workflow, and interface diagrams. GitHub renders these Mermaid diagrams directly.
+
+Release archives contain the full path `SPT_Runtime/user/mods/AmmoGraph`. Extract them into the directory containing `SPT_Runtime`, with the server stopped. Existing configuration files are not included or overwritten. Build an archive with `./AmmoGraph/build.ps1 -Package`.
 
 ## Quick start
 
@@ -47,6 +52,7 @@ Start the SPT server, then open **https://localhost:6969/AmmoGraph**, for exampl
 - Reads ammunition templates and translations once during server startup.
 - Displays damage, penetration, velocity, and other statistics in the chart, table, and details panel.
 - Supports zooming, panning, buckshot/pellet views, language selection, and light and dark themes.
+- Fans out grouped chart points on hover, with dashed connectors and individual ammunition selection.
 - Stores personal views, names, and exclusions in each visitor's browser.
 - Leaves game values and profiles unchanged. The page does not write server configuration files.
 

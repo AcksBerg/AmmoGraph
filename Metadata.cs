@@ -11,7 +11,7 @@ public record Metadata : IModMetadata, IModBlazorMetadata
     public string Name { get; init; } = "Ammo Graph";
     public string Author { get; init; } = "AcksBerg";
     public List<string>? Contributors { get; init; }
-    public Version Version { get; init; } = new("0.21.0");
+    public Version Version { get; init; } = new("0.23.6");
     public Range SptVersion { get; init; } = new(">=4.1.6 <4.2.0");
     public bool HasPrepatcher { get; init; } = false;
     public List<string>? Incompatibilities { get; init; }
@@ -20,5 +20,5 @@ public record Metadata : IModMetadata, IModBlazorMetadata
     public string License { get; init; } = "MIT";
     public string? WWWRootUrl { get; init; } = "ammo-graph";
     public string? HomePage { get; init; } = "/AmmoGraph";
-    public string? HomePageDescription { get; init; } = "Compare ammunition loaded by this server.";
+    public string? HomePageDescription { get; init; } = "Compare loaded ammunition and simulate magazine effects on armor.";
 }

@@ -1,0 +1,24 @@
+<div class="ag-armor-filters">
+    <details><summary>@Text["SimClass"] @(Classes.Count == Levels.Length ? Text["All"] : Classes.Count == 0 ? Text["None"] : string.Join(", ", Classes.Order()))</summary>
+        <div><button type="button" data-filter-all="class" @onclick="ToggleAllClasses">@(Classes.Count == Levels.Length ? Text["None"] : Text["All"])</button>@foreach (var level in Levels)
+        { <label><input type="checkbox" checked="@Classes.Contains(level)" @onchange="() => ToggleClass(level)" />@Text["SimClass"] @level</label> }</div>
+    </details>
+    <details><summary>@Text["SimMaterial"] @(Materials.Count == MaterialOptions.Length ? Text["All"] : Materials.Count == 0 ? Text["None"] : string.Join(", ", Materials.Order().Select(MaterialName)))</summary>
+        <div><button type="button" data-filter-all="material" @onclick="ToggleAllMaterials">@(Materials.Count == MaterialOptions.Length ? Text["None"] : Text["All"])</button>@foreach (var material in MaterialOptions)
+        { <label><input type="checkbox" checked="@Materials.Contains(material)" @onchange="() => ToggleMaterial(material)" />@MaterialName(material)</label> }</div>
+    </details>
+</div>
+@code {
+    [Parameter] public IEnumerable<ArmorPart> Parts { get; set; } = [];
+    [Parameter] public HashSet<int> Classes { get; set; } = [];
+    [Parameter] public HashSet<string> Materials { get; set; } = [];
+    [Parameter] public UiText Text { get; set; } = null!;
+    [Parameter] public Func<string, string> MaterialName { get; set; } = value => value;
+    [Parameter] public EventCallback OnChanged { get; set; }
+    private int[] Levels => Enumerable.Range(1, Parts.Select(p => p.Class).DefaultIfEmpty(0).Max()).ToArray();
+    private string[] MaterialOptions => Parts.Select(p => p.Material).Distinct().Order().ToArray();
+    private Task ToggleAllClasses() { if (Classes.Count == Levels.Length) Classes.Clear(); else Classes.UnionWith(Levels); return OnChanged.InvokeAsync(); }
+    private Task ToggleAllMaterials() { if (Materials.Count == MaterialOptions.Length) Materials.Clear(); else Materials.UnionWith(MaterialOptions); return OnChanged.InvokeAsync(); }
+    private Task ToggleClass(int level) { if (!Classes.Add(level)) Classes.Remove(level); return OnChanged.InvokeAsync(); }
+    private Task ToggleMaterial(string material) { if (!Materials.Add(material)) Materials.Remove(material); return OnChanged.InvokeAsync(); }
+}

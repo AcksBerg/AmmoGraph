@@ -1,0 +1,93 @@
+<section class="ag-sim-results" aria-label="@Text["SimResults"]">
+    <div class="ag-sim-result-heading"><h2>@Text["SimResults"]</h2><span>@Result.Runs.ToString("N0", Text.Culture) @Text["SimRuns"] · @Text["SimTotalDamage"] <strong>@Number(Result.TotalDamage) HP</strong></span></div>
+    <div class="ag-sim-total" data-total-damage><strong>@Text["SimTotalDamage"] @Number(Result.TotalDamage) HP</strong><span>@Text["SimExampleTotal"] @Number(Result.Shots.Sum(s => s.Example.Damage)) HP</span></div>
+    <div class="ag-legend ag-sim-legend" aria-label="@Text["SimLegend"]">
+        <button type="button" class="@(Shown("cumulative") ? "is-active" : "")" aria-pressed="@(Shown("cumulative") ? "true" : "false")" style="--caliber-color:var(--sim-layer-2)" @onclick='() => Toggle("cumulative")'><span class="ag-symbol" aria-hidden="true">Σ</span><span>@Text["SimCumulative"] (HP)</span></button>
+        <button type="button" class="@(Shown("chance") ? "is-active" : "")" aria-pressed="@(Shown("chance") ? "true" : "false")" style="--caliber-color:var(--cyan)" @onclick='() => Toggle("chance")'><span class="ag-symbol" aria-hidden="true">━</span><span>@Text["SimPenetration"]</span></button>
+        @for (var i = 0; i < Result.Layers.Length; i++)
+        { var index = i; var layer = Result.Layers[index]; <button type="button" class="@(Shown(layer.Id) ? "is-active" : "")" aria-pressed="@(Shown(layer.Id) ? "true" : "false")" style="@($"--caliber-color:{Color(index)}")" @onclick="() => Toggle(layer.Id)"><span class="ag-symbol" aria-hidden="true">┄</span><span>@(layer.Locked ? Text["SimInsert"] : Text["SimPlate"]) · @Catalog.Name(layer.TemplateId, Language)</span></button> }
+        <button type="button" class="@(Shown("damage") ? "is-active" : "")" aria-pressed="@(Shown("damage") ? "true" : "false")" style="--caliber-color:var(--gold)" @onclick='() => Toggle("damage")'><span class="ag-symbol" aria-hidden="true">▮</span><span>@Text["SimDamage"] (HP)</span></button>
+    </div>
+    <div class="ag-sim-chart-scroll">
+        <svg class="ag-simulation-chart" viewBox="0 0 1040 530" role="img" aria-label="@Text["SimChartLabel"]" @onkeydown="Navigate">
+            @for (var i = 0; i <= 4; i++)
+            {
+                var percent = i * 25; var y = Y(percent);
+                <g class="ag-grid"><line x1="80" x2="940" y1="@F(y)" y2="@F(y)" /></g>
+                <g class="ag-tick"><text x="65" y="@F(y + 4)" text-anchor="end">@percent %</text><text x="955" y="@F(y + 4)">@Number(DamageMaximum * i / 4)</text></g>
+            }
+            @for (var shot = 0; shot <= 30; shot += 5)
+            { <g class="ag-tick"><text x="@F(X(shot))" y="460" text-anchor="middle">@shot</text></g> }
+            <g class="ag-axis-label"><text x="510" y="505" text-anchor="middle">@Text["SimShot"]</text><text x="80" y="28">@Text["SimPercentAxis"]</text><text x="940" y="28" text-anchor="end">@Text["SimDamage"] (HP)</text></g>
+            @if (Shown("damage"))
+            {
+                @foreach (var shot in Result.Shots)
+                { var height = shot.Damage / DamageMaximum * 360; <rect class="ag-sim-damage-bar" x="@F(X(shot.Shot) - 9)" y="@F(430 - height)" width="18" height="@F(height)"><title>@Text["SimShot"] @shot.Shot · @Number(shot.Damage) HP</title></rect> }
+            }
+            @for (var i = 0; i < Result.Layers.Length; i++)
+            {
+                var index = i; var layer = Result.Layers[index];
+                @if (Shown(layer.Id)) { <polyline class="ag-sim-series" stroke="@Color(index)" stroke-dasharray="@(index % 2 == 0 ? "8 4" : "3 3")" points="@LayerPoints(index)"><title>@Catalog.Name(layer.TemplateId, Language)</title></polyline> }
+            }
+            @if (Shown("chance")) { <polyline class="ag-sim-series ag-sim-chance" stroke="var(--cyan)" points="@ChancePoints" /> }
+            @if (Shown("cumulative"))
+            {
+                <polyline class="ag-sim-series ag-sim-cumulative" stroke="var(--sim-layer-2)" points="@CumulativePoints" data-total="@F(Result.TotalDamage)" />
+                <g class="ag-tick"><text x="@F(Math.Min(850, X(SelectedShot)))" y="@F(Math.Max(52, 420 - Cumulative(SelectedShot) / DamageMaximum * 360))">Σ @Number(Cumulative(SelectedShot)) HP</text></g>
+            }
+            @foreach (var shot in Result.Shots)
+            {
+                var n = shot.Shot;
+                <g role="button" tabindex="0" class="ag-sim-shot @(SelectedShot == n ? "is-selected" : "")" data-shot="@n" aria-label="@($"{Text["SimShot"]} {n}: {AmmoName(shot.AmmoId)}, {Number(shot.PenetrationPercent)} %, {Number(shot.Damage)} HP")" @onclick="() => SelectedShot = n" @onfocus="() => SelectedShot = n" @onkeydown="e => Activate(e, n)">
+                    <rect x="@F(X(n) - 13)" y="65" width="26" height="370" />
+                    @if (Shown("chance")) { <circle cx="@F(X(n))" cy="@F(Y(shot.PenetrationPercent))" r="4" /> }
+                    <title>@Text["SimShot"] @n · @AmmoName(shot.AmmoId) · @Number(shot.PenetrationPercent) % · @Number(shot.Damage) HP</title>
+                </g>
+            }
+        </svg>
+    </div>
+    @{ var selected = Result.Shots[SelectedShot - 1]; var example = selected.Example; }
+    <article class="ag-sim-shot-details" aria-live="polite">
+        <div class="ag-sim-detail-heading"><h3>@Text["SimShot"] @SelectedShot · @AmmoName(selected.AmmoId)</h3><div><button type="button" disabled="@(SelectedShot == 1)" aria-label="@Text["SimPrevious"]" @onclick="() => SelectedShot--">←</button><button type="button" disabled="@(SelectedShot == 30)" aria-label="@Text["SimNext"]" @onclick="() => SelectedShot++">→</button></div></div>
+        <dl class="ag-sim-stats"><div><dt>@Text["SimPenetration"]</dt><dd>@Number(selected.PenetrationPercent) %</dd></div><div><dt>@Text["SimMeanDamage"]</dt><dd>@Number(selected.Damage) HP</dd></div><div><dt>@Text["SimMeanBlunt"]</dt><dd>@Number(selected.BluntDamage) HP</dd></div></dl>
+        <p data-selected-total>@Text["SimCumulative"]: @Number(Cumulative(SelectedShot)) HP · @Text["SimExample"]: @Number(Result.Shots.Take(SelectedShot).Sum(s => s.Example.Damage)) HP</p>
+        <h4>@Text["SimExample"]</h4>
+        <p>@(example.Penetrated ? Text["SimPenetrated"] : Text["SimBlocked"]) · @Number(example.Damage) HP (@Text["SimBlunt"]: @Number(example.BluntDamage) HP)
+            @if (example.BlockedBy is { } blocker) { <span> · @Text["SimBlockedBy"] @LayerName(blocker)</span> }
+            @if (example.Fragments > 0) { <span> · @example.Fragments @Text["SimFragments"]</span> }
+        </p>
+        @if (Result.Layers.Length == 0) { <p>@Text["SimUnprotectedZone"]</p> }
+        else
+        {
+            <div class="ag-table-scroll"><table class="ag-sim-layer-table"><thead><tr><th>@Text["SimLayer"]</th><th>@Text["SimMeanDurability"]</th><th>@Text["SimExampleDurability"]</th></tr></thead><tbody>
+                @for (var i = 0; i < Result.Layers.Length; i++)
+                { var index = i; var layer = Result.Layers[index]; <tr><td>@Catalog.Name(layer.TemplateId, Language) <small>@(layer.Slot == "body" ? Text["SimInsert"] : Catalog.Label(layer.Slot, Language))</small></td><td>@Number(selected.Durability[index]) / @Number(layer.Maximum)</td><td>@Number(example.Before[index]) → @Number(example.After[index]) / @Number(layer.Maximum)</td></tr> }
+            </tbody></table></div>
+        }
+    </article>
+</section>
+@code {
+    [Parameter] public SimulationResult Result { get; set; } = null!;
+    [Parameter] public SimulationCatalog Catalog { get; set; } = null!;
+    [Parameter] public AmmoEntry[] Ammo { get; set; } = [];
+    [Parameter] public UiText Text { get; set; } = null!;
+    [Parameter] public string Language { get; set; } = "en";
+    private int SelectedShot = 1;
+    private readonly HashSet<string> Hidden = ["cumulative"];
+    private static string Color(int i) => $"var(--sim-layer-{i % 6})";
+    private bool Shown(string key) => !Hidden.Contains(key);
+    private void Toggle(string key) { if (!Hidden.Add(key)) Hidden.Remove(key); }
+    private static double X(int shot) => 80 + shot * 860d / 30;
+    private static double Y(double percent) => 430 - percent * 3.6;
+    private static string F(double value) => value.ToString("0.###", CultureInfo.InvariantCulture);
+    private string Number(double value) => value.ToString("0.##", Text.Culture);
+    private double Cumulative(int shot) => Result.Shots.Take(shot).Sum(s => s.Damage);
+    private double DamageMaximum => Math.Max(1, (Shown("cumulative") ? Result.TotalDamage : Result.Shots.Max(s => s.Damage)) * 1.1);
+    private string CumulativePoints => $"{F(X(0))},430 " + string.Join(" ", Result.Shots.Select(s => $"{F(X(s.Shot))},{F(430 - Cumulative(s.Shot) / DamageMaximum * 360)}"));
+    private string ChancePoints => string.Join(" ", Result.Shots.Select(s => $"{F(X(s.Shot))},{F(Y(s.PenetrationPercent))}"));
+    private string LayerPoints(int index) => $"{F(X(0))},{F(Y(100))} " + string.Join(" ", Result.Shots.Select(s => $"{F(X(s.Shot))},{F(Y(s.Durability[index] / Result.Layers[index].Maximum * 100))}"));
+    private string AmmoName(string id) => Ammo.FirstOrDefault(a => a.TemplateId == id)?.Name ?? id;
+    private string LayerName(string id) => Result.Layers.FirstOrDefault(l => l.Id == id) is { } layer ? Catalog.Name(layer.TemplateId, Language) : id;
+    private void Navigate(KeyboardEventArgs e) { if (e.Key == "ArrowLeft") SelectedShot = Math.Max(1, SelectedShot - 1); if (e.Key == "ArrowRight") SelectedShot = Math.Min(30, SelectedShot + 1); }
+    private void Activate(KeyboardEventArgs e, int n) { if (e.Key is "Enter" or " ") SelectedShot = n; }
+}

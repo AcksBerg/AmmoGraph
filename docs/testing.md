@@ -33,9 +33,11 @@ Browsers use fresh temporary contexts, leaving the personal Chrome profile untou
 | Changed area | Command / focus |
 | --- | --- |
 | General page behavior | `node AmmoGraph/tests/browser.mjs` |
+| Magazine editor, armor, diagram, buckshot and graph restoration | `node AmmoGraph/tests/simulation.mjs` against the separate [simulation test host](simulation.md#implementation-and-validation) |
 | Table, sorting, comparisons | `node AmmoGraph/tests/table.mjs` |
 | Menus, keyboard, percentage display | `node AmmoGraph/tests/menus.mjs` |
 | Zoom, pan, legend, touch events | `node AmmoGraph/tests/navigation.mjs` |
+| Grouped point fans, connectors, individual selection, keyboard and touch | `node AmmoGraph/tests/spiderfy.mjs` |
 | Table filter and pan bounds | `node AmmoGraph/tests/filter-pan.mjs` |
 | Search and SVG symbols | `node AmmoGraph/tests/search-symbols.mjs` |
 | Tooltip, details, and attributes | `node AmmoGraph/tests/presentation.mjs` |

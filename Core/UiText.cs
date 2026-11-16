@@ -122,6 +122,11 @@ public sealed class UiText(string language)
             if (values.Length != personalKeys.Length) throw new InvalidDataException($"Invalid personal name translation for {translation.Name}");
             for (var i = 0; i < personalKeys.Length; i++) result[translation.Name][personalKeys[i]] = values[i];
         }
+        using var simulationStream = typeof(UiText).Assembly.GetManifestResourceStream("AmmoGraph.Resources.simulation.json")!;
+        using var simulation = JsonDocument.Parse(simulationStream);
+        foreach (var translation in simulation.RootElement.EnumerateObject())
+            foreach (var entry in translation.Value.EnumerateObject())
+                result[translation.Name][entry.Name] = entry.Value.GetString()!;
         return result;
     }
 }

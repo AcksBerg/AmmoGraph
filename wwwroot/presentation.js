@@ -9,10 +9,18 @@ export function bindPresentation() {
     function place() {
         const tip = tooltip();
         if (!tip || !active?.isConnected || active.dataset.id !== tip.dataset.group) { tip?.removeAttribute('data-open'); return; }
+        if (active.matches('.ag-point[data-expanded]')) { tip.removeAttribute('data-open'); return; }
         tip.dataset.open = 'true';
         const box = tip.getBoundingClientRect();
-        tip.style.left = `${Math.max(8, Math.min(x + 14, innerWidth - box.width - 8))}px`;
-        tip.style.top = `${Math.max(8, Math.min(y + 16, innerHeight - box.height - 8))}px`;
+        const fan = active.closest('.ag-fan')?.getBoundingClientRect();
+        let left=x+14, top=y+16;
+        if(fan){
+            if(fan.right+box.width+20<=innerWidth)left=fan.right+12;
+            else if(fan.left-box.width-12>=8)left=fan.left-box.width-12;
+            else {left=fan.left+(fan.width-box.width)/2;top=fan.top-box.height-12>=8?fan.top-box.height-12:fan.bottom+12;}
+        }
+        tip.style.left = `${Math.max(8, Math.min(left, innerWidth - box.width - 8))}px`;
+        tip.style.top = `${Math.max(8, Math.min(top, innerHeight - box.height - 8))}px`;
         active.setAttribute('aria-describedby', 'ag-tooltip');
     }
     function update() {
@@ -36,7 +44,7 @@ export function bindPresentation() {
     const observer = new ResizeObserver(update);
     function schedule() { cancelAnimationFrame(frame); frame = requestAnimationFrame(update); }
     function enter(event) {
-        const point = event.target.closest?.('.ag-point');
+        const point = event.target.closest?.('.ag-point,.ag-fan-point,.ag-ammo-tooltip-target');
         if (point) {
             clearTimeout(timer);
             if (active !== point) { active?.removeAttribute('aria-describedby'); active = point; }
@@ -48,10 +56,10 @@ export function bindPresentation() {
     function leave(event) {
         const target = event.relatedTarget;
         if (active?.contains(target) || tooltip()?.contains(target)) return;
-        if (event.target.closest?.('.ag-point,.ag-tooltip')) { clearTimeout(timer); timer = setTimeout(hide, 180); }
+        if (event.target.closest?.('.ag-point,.ag-fan-point,.ag-ammo-tooltip-target,.ag-tooltip')) { clearTimeout(timer); timer = setTimeout(hide, 180); }
     }
     function move(event) {
-        if (!event.target.closest?.('.ag-point') || !active) return;
+        if (!event.target.closest?.('.ag-point,.ag-fan-point,.ag-ammo-tooltip-target') || !active) return;
         x = event.clientX; y = event.clientY; place();
     }
     function key(event) { if (event.key === 'Escape') hide(); }

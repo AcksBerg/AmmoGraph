@@ -213,6 +213,8 @@ Edit `wwwroot/graph.css`. `GraphStyles` reads the same file as an embedded resou
 
 ## 11. Common problems
 
+The [ballistics simulator guide](simulation.md) explains the additional `SimulationCatalog`, `MagazineRecipe`, `BallisticsEngine` and simulator components. The catalog reads templates, presets and globals in the same startup phase; calculation runs on a background task against captured inputs. The simulator does not load Unity or client assemblies.
+
 | Symptom | Check first |
 | --- | --- |
 | Adding a metric prevents startup | Exact property name in `TemplateItemProperties`, numeric type, and complete translation lists. |

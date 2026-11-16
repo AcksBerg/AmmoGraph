@@ -10,13 +10,14 @@ namespace AmmoGraph.Core;
 // SPT 4.1.6 awaits IOnLoad in ascending TypePriority order before announcing readiness.
 // Use the last possible priority to capture other mods' completed startup changes.
 [Injectable(InjectionType.Singleton, int.MaxValue)]
-public sealed class AmmoCatalog(TemplateTable templates, LocaleTable localeTable, LocaleService locales, ISptLogger<AmmoCatalog> logger) : IOnLoad
+public sealed class AmmoCatalog(TemplateTable templates, GlobalTable globals, LocaleTable localeTable, LocaleService locales, ISptLogger<AmmoCatalog> logger) : IOnLoad
 {
     public AmmoSnapshot Snapshot { get; private set; } = new("en", [], []);
     public IReadOnlyList<LanguageChoice> Languages { get; private set; } = [];
     private FrozenDictionary<string, AmmoSnapshot> _snapshots = FrozenDictionary<string, AmmoSnapshot>.Empty;
     public AmmoSnapshot GetSnapshot(string language) => _snapshots.GetValueOrDefault(language) ?? Snapshot;
     public bool Ready { get; private set; }
+    public SimulationCatalog Simulation { get; private set; } = new();
     public ExclusionRules ExclusionRules { get; private set; } = DefaultExclusions.Defaults;
     public IReadOnlyDictionary<string,string> CaliberNames { get; private set; } = CaliberNameMap.Defaults;
     private FrozenDictionary<string,AmmoSnapshot> _baseSnapshots = FrozenDictionary<string,AmmoSnapshot>.Empty;
@@ -39,6 +40,9 @@ public sealed class AmmoCatalog(TemplateTable templates, LocaleTable localeTable
         CaliberNames = caliberNames;
         _snapshots = _baseSnapshots.ToFrozenDictionary(kv => kv.Key,kv => SnapshotBuilder.RenameCalibers(kv.Value,caliberNames));
         Snapshot = _snapshots[language];
+        Simulation = SimulationCatalog.Build(templates.Items.Values, globals, languages.ToDictionary(code => code,
+            code => (IReadOnlyDictionary<string, string>)(localeTable.Global.ContainsKey(SnapshotBuilder.GameLocale(code))
+                ? locales.GetLocaleDb(SnapshotBuilder.GameLocale(code)) : new Dictionary<string, string>())));
         Ready = true;
         logger.Info($"[AmmoGraph] Loaded {Snapshot.Items.Count} ammunition variants in {Languages.Count} languages (default: {language}).");
         return Task.CompletedTask;

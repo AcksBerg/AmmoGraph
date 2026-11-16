@@ -1,0 +1,6 @@
+@namespace AmmoGraph.SimulationHost
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.AspNetCore.Components.Routing
+<!DOCTYPE html>
+<html><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><base href="/" /><HeadOutlet /></head>
+<body><Router AppAssembly="@typeof(App).Assembly" AdditionalAssemblies="@(new[] { typeof(AmmoGraph.Web.AmmoGraphPage).Assembly })"><Found Context="route"><RouteView RouteData="route" /></Found></Router><script src="_framework/blazor.web.js"></script></body></html>

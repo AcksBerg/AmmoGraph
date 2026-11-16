@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../AmmoGraph.csproj" />
+    <Reference Include="SPTarkov.Server.Core"><HintPath>../../../SPT_Runtime/SPTarkov.Server.Core.dll</HintPath></Reference>
+    <Reference Include="SPTarkov.Common"><HintPath>../../../SPT_Runtime/SPTarkov.Common.dll</HintPath></Reference>
+    <Reference Include="SPTarkov.Server.Web"><HintPath>../../../SPT_Runtime/SPTarkov.Server.Web.dll</HintPath></Reference>
+    <Reference Include="SPTarkov.DI"><HintPath>../../../SPT_Runtime/SPTarkov.DI.dll</HintPath></Reference>
+    <Reference Include="SemanticVersioning"><HintPath>../../../SPT_Runtime/SemanticVersioning.dll</HintPath></Reference>
+  </ItemGroup>
+</Project>

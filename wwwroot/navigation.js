@@ -79,6 +79,7 @@ function create(svg, previous) {
     }
     function redraw() { if (!frame) frame = requestAnimationFrame(() => { frame = 0; draw(); }); }
     function zoom(start, factor, anchor, target = anchor) {
+        svg.dispatchEvent(new Event('ag-navigation-start'));
         const k = clamp(width(base) / width(start) * factor, 1, 100);
         const w = width(base) / k, h = height(base) / k;
         const worldX = start.minX + (anchor.x - plot.left) / plot.width * width(start);
@@ -103,6 +104,7 @@ function create(svg, previous) {
         else { const a = [...pointers.values()][0]; gesture = { view: copy(view), p: a.p, client: a.client }; }
     }
     function activate() {
+        svg.dispatchEvent(new Event('ag-navigation-start'));
         interacting = true; svg.classList.add('ag-interacting');
         for (const id of pointers.keys()) { try { svg.setPointerCapture(id); } catch { /* Pointer may have ended. */ } }
     }
@@ -138,10 +140,11 @@ function create(svg, previous) {
     function suppressClick(event) { if (performance.now() < suppressUntil) { event.preventDefault(); event.stopImmediatePropagation(); } }
     function action(event) {
         const button = event.target.closest('[data-nav]'); if (!button || !panel.contains(button)) return;
-        if (button.dataset.nav === 'reset') { view = copy(base); redraw(); }
+        if (button.dataset.nav === 'reset') { svg.dispatchEvent(new Event('ag-navigation-start')); view = copy(base); redraw(); }
         else zoom(view, button.dataset.nav === 'in' ? 1.5 : 1 / 1.5, { x: 500, y: 256 });
     }
     function key(event) {
+        if (event.key === 'Home' || event.key.startsWith('Arrow')) svg.dispatchEvent(new Event('ag-navigation-start'));
         if (event.key === '+' || event.key === '=') zoom(view, 1.5, { x: 500, y: 256 });
         else if (event.key === '-') zoom(view, 1 / 1.5, { x: 500, y: 256 });
         else if (event.key === 'Home') { view = copy(base); redraw(); }
@@ -161,7 +164,7 @@ function create(svg, previous) {
             points = [...svg.querySelectorAll('.ag-point')].map(node => ({ node, x: Number(node.dataset.x), y: Number(node.dataset.y), baseX: Number(node.dataset.baseX), baseY: Number(node.dataset.baseY) }));
             const nextSignature = [svg.dataset.xKey, svg.dataset.yKey, svg.dataset.language, svg.dataset.xMin, svg.dataset.xMax, svg.dataset.yMin, svg.dataset.yMax, ...points.map(p => `${p.node.dataset.id}:${p.x}:${p.y}`)].join('|');
             base = { minX: Number(svg.dataset.xMin), maxX: Number(svg.dataset.xMax), minY: Number(svg.dataset.yMin), maxY: Number(svg.dataset.yMax) };
-            if (nextSignature !== signature || !view) { view = copy(base); pointers.clear(); interacting = false; svg.classList.remove('ag-interacting'); }
+            if (nextSignature !== signature || !view) { svg.dispatchEvent(new Event('ag-navigation-start')); view = copy(base); pointers.clear(); interacting = false; svg.classList.remove('ag-interacting'); }
             signature = nextSignature;
             const locale = svg.dataset.language || 'en';
             number = new Intl.NumberFormat(locale, { maximumFractionDigits: 3, useGrouping: false });

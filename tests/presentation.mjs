@@ -71,14 +71,18 @@ try{
     await check('Mouse hover opens a tooltip that remains accessible when moving into its card',async()=>{
         await page.locator('.ag-chart').scrollIntoViewIfNeeded();await page.waitForTimeout(150);
         await page.locator('.ag-point .ag-hit-area').last().hover({force:true});
+        if((await page.locator('.ag-point').last().getAttribute('data-id')).includes(',')){
+            await until(async()=>await page.locator('.ag-fan.is-expanded').count()===1);await page.locator('.ag-fan.is-expanded .ag-fan-point .ag-hit-area').first().hover();
+        }
         await until(async()=>await page.locator('.ag-tooltip').getAttribute('data-open')==='true');
         const box=await page.locator('.ag-tooltip').boundingBox();await page.mouse.move(box.x+box.width/2,box.y+box.height/2);
         await page.waitForTimeout(250);assert.equal(await page.locator('.ag-tooltip').getAttribute('data-open'),'true');
         await page.keyboard.press('Escape');assert.equal(await page.locator('.ag-tooltip').getAttribute('data-open'),null);
         const overlap=page.locator('.ag-point[data-id*=","]').first();
         if(await overlap.count()){
-            await overlap.focus();await until(async()=>await page.locator('.ag-tooltip').getAttribute('data-open')==='true');
-            assert.equal(await page.locator('[data-tooltip-ammo]').count(),(await overlap.getAttribute('data-id')).split(',').length);
+            await page.locator('.ag-chart').focus();await overlap.focus();await until(async()=>await page.locator('.ag-fan.is-expanded').count()===1);
+            await page.locator('.ag-fan.is-expanded .ag-fan-point').first().focus();await until(async()=>await page.locator('.ag-tooltip').getAttribute('data-open')==='true');
+            assert.equal(await page.locator('[data-tooltip-ammo]').count(),1);
         }
         await page.mouse.move(1590,990);await page.keyboard.press('Escape');
     });

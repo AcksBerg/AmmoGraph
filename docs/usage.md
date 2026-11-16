@@ -1,5 +1,7 @@
 ﻿# Usage and configuration
 
+Use the header cartridge button to open the [ballistics simulator](simulation.md), or the graph button to return to ammunition comparison. It runs with the SPT server alone and displays its model assumptions beside the configuration.
+
 AmmoGraph is a server mod with a Blazor interface at `/AmmoGraph`. It was developed and tested with the locally installed **SPT 4.1.6 / .NET 10**. The page displays ammunition data from that server instance without a Python export, Realism file parser, or separate web server.
 
 > Back to the [project overview](../README.md). See the [developer guide](development.md) for code explanations and the [interface tour](ui.md) for screenshots.
@@ -100,7 +102,7 @@ The upper bound is exactly `Maximum + min(abs(Maximum) × 0.1, 10)`. The lower b
 
 Overlapping points are grouped. The hover tooltip shows one compact card per cartridge, with vertical attribute/value rows. By default it includes the symbol, caliber, name, damage, penetration, and bullet velocity. Units are attached to attribute names and numeric values are right-aligned.
 
-The tooltip also opens on keyboard focus, closes with Escape, and stays open when the pointer moves into the card. Long attribute lists scroll inside the tooltip and stay within the window. Repeated clicks on a point cycle through its cartridges; alternatively, select a cartridge in the main table. Points support Tab and Enter.
+The tooltip also opens on keyboard focus, closes with Escape, and stays open when the pointer moves into the card. Long attribute lists scroll inside the tooltip and stay within the window. Hovering a grouped point fans its cartridges out around their common location, with dashed connectors back to the actual data point. Select one of these symbols directly, or choose a cartridge in the main table. **Show all names** also labels every fanned member; switching it off hides these labels again. Large stacks use multiple rings. Leaving the fan, pressing Escape, zooming, or panning collapses it. Tab focuses a group, Enter moves into its individual symbols, and Enter or Space selects a focused symbol. On touch screens, tap a group and then tap a member.
 
 Symbol, caliber, and ammunition name form a fixed header in both the tooltip and details panel, outside the configurable metric selection. In the tooltip, the symbol always sits immediately beside the caliber. Saved attribute lists from older versions are reduced to metrics while preserving their order.
 

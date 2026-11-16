@@ -24,9 +24,9 @@ In the code: `SearchedCalibers`, `Toggle`, and `ApplyCaliberFilter` in [AmmoGrap
 
 ![Scatter plot with a highlighted reference cartridge and its statistics in the right-hand details panel](images/chart-details.png)
 
-Each point represents at least one ammunition variant. Clicking pins the comparison reference; repeated clicks cycle through overlapping cartridges. The details panel shows the reference and adds comparison values when another cartridge is hovered. Use the mouse wheel to zoom and drag to pan.
+Each point represents at least one ammunition variant. Hovering a grouped point fans its cartridges out in a circle, with dashed connectors to their original shared position. Larger groups use several rings. Click an individual symbol to pin that cartridge as the comparison reference; hovering it shows its own tooltip and comparison values. The fan closes when you leave it, press Escape, or navigate the chart. Keyboard focus and tapping a group also open it. Use the mouse wheel to zoom and drag to pan.
 
-In the code: SVG and `SelectGroup` in [AmmoGraphPage](../Web/AmmoGraphPage.razor), comparisons in [AmmoComparison](../Core/AmmoComparison.cs), local navigation in [navigation.js](../wwwroot/navigation.js), and detail values in [ComparedValue](../Web/ComparedValue.razor).
+In the code: SVG fan members and `Select` in [AmmoGraphPage](../Web/AmmoGraphPage.razor), fan positioning and interaction in [spiderfy.js](../wwwroot/spiderfy.js), comparisons in [AmmoComparison](../Core/AmmoComparison.cs), local navigation in [navigation.js](../wwwroot/navigation.js), and detail values in [ComparedValue](../Web/ComparedValue.razor).
 
 ## Comparison table
 
@@ -59,6 +59,16 @@ In the code: [CaliberNameEditor](../Web/CaliberNameEditor.razor), `SavePersonalN
 In these lists, a checked box means hidden. Entries hidden by default remain available and can be made visible again. The settings belong to the current browser.
 
 In the code: [ExclusionEditor](../Web/ExclusionEditor.razor), exclusion state in [AmmoGraphPage](../Web/AmmoGraphPage.razor), and server defaults in [DefaultExclusions](../Core/DefaultExclusions.cs).
+
+## Ballistics simulator
+
+The header cartridge button replaces the chart, axis controls and selected-ammunition panel with a magazine editor, armor configuration and simulation diagram. The caliber filter becomes a single selection; the table adds Start/Middle/End actions. The graph button restores the previous graph view.
+
+The diagram combines penetration rate and separate component durability lines on the percentage axis with damage bars on the HP axis. Select a shot for statistical values and a reproducible example. See [the simulator guide](simulation.md) for controls, assumptions and calculation sources.
+
+![Simulation showing penetration rate, separate class-5 plate and class-3 insert durability, damage and an example shot](images/simulation-results.png)
+
+[Full magazine and armor configuration screenshot](images/simulation.png).
 
 ## Mobile view
 

@@ -24,22 +24,25 @@ flowchart LR
 
 The configuration flow represents read access by the mod. Personal changes in the browser pass through page state into cookies.
 
+The simulator adds `SimulationCatalog`, captured in the same startup hook from templates, presets and globals. `SimulatorDraft` contains caliber, `MagazineRecipe`, armor ID, slot choices, zone and seed. `SimulationRequest` supplies that draft and a run count to the server-side `BallisticsEngine`; `SimulationResult` contains per-shot means, component durability and an example trace. There is no simulation REST API or client bridge. Optional `simulationMode` and `simulator` preferences keep older cookies compatible. See [the simulator guide](simulation.md).
+
 ## 2. SPT registration
 
 Sources: [Metadata.cs](../Metadata.cs), [AmmoCatalog.cs](../Core/AmmoCatalog.cs).
 
 | Contract | Implementation | Purpose |
 | --- | --- | --- |
-| `IModMetadata` | `Metadata` | Mod ID, name, version `0.21.0`, license, and SPT range `>=4.1.6 <4.2.0`. |
+| `IModMetadata` | `Metadata` | Mod ID, name, version `0.23.6`, license, and SPT range `>=4.1.6 <4.2.0`. |
 | `IModBlazorMetadata` | `WWWRootUrl = "ammo-graph"`, `HomePage = "/AmmoGraph"` | SPT serves the web assets and links to the mod page. |
 | `IOnLoad` | `AmmoCatalog.OnLoadAsync(CancellationToken)` | Build the dataset once during server startup. |
 | `[Injectable(...)]` | `Singleton`, priority `int.MaxValue` | One shared catalog, running after ordinary earlier startup hooks. |
 
-`AmmoCatalog` receives four dependencies through its constructor:
+`AmmoCatalog` receives five dependencies through its constructor:
 
 | Dependency | Data read or functionality used |
 | --- | --- |
 | `TemplateTable` | `Items.Values`: loaded item templates, including mod changes. |
+| `GlobalTable` | Loaded armor class resistances, material factors, body-collider settings and equipment presets for simulation. |
 | `LocaleTable` | Available game language databases through `Global.Keys`. |
 | `LocaleService` | Desired server language, supported languages, and translation tables. |
 | `ISptLogger<AmmoCatalog>` | Configuration warnings and a summary after dataset creation. |
@@ -140,6 +143,9 @@ The DOM is the browser's tree of HTML and SVG elements. The main page writes `da
 | `.ag-point`: `data-id` | Comma-separated IDs of overlapping variants. |
 | `.ag-point`: `data-x`, `data-y` | The point's metric values. |
 | `.ag-point`: `data-base-x`, `data-base-y` | Original SVG coordinates. JavaScript calculates movement relative to them. |
+| `.ag-fan`: `data-group` | The same comma-separated member IDs as its collapsed point. `spiderfy.js` lays out the fan outside the clipped point layer. |
+| `.ag-fan-point`: `data-id` | One ammunition ID with its own Blazor hover, focus, and selection handlers. |
+| `.ag-fan-line` / `.ag-fan-origin` | Dashed links and the original data location in current SVG viewport coordinates. Fan positions never change ammunition values. |
 | `.ag-static-axes`, `.ag-navigation-axes` | Axes prepared by C# and navigation axes generated locally. |
 | `[data-nav="in"/"out"/"reset"]` | Zoom and reset buttons. |
 | `.ag-chart`: `data-zoom`, `data-view-x-min`, etc. | Current viewport written by JavaScript; also used by browser checks. |
@@ -147,6 +153,8 @@ The DOM is the browser's tree of HTML and SVG elements. The main page writes `da
 C# writes machine-readable numeric attributes using `InvariantCulture`, so a localized decimal comma does not break JavaScript number parsing. Visible labels use the selected display language instead.
 
 Navigation compares metrics, language, bounds, and point data against the previous state. A change in this signature resets the viewport. A hover or selection change alone preserves it. Zoom and pan are not saved in cookies.
+
+Navigation emits `ag-navigation-start` before camera movement or a data-signature reset. The fan controller collapses on that event. `syncFans` reconnects after Blazor renders; `destroyFans` releases its listeners during page disposal. Presentation handles individual fan members as tooltip anchors and places their cards outside the expanded area when space permits.
 
 ## 7. Server-wide JSON configuration
 
