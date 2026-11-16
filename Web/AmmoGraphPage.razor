@@ -206,7 +206,7 @@
                             {
                                 <div data-tooltip-column="@key" class="ag-tooltip-field ag-tooltip-metric">
                                     <dt>@AttributeLabel(key)</dt>
-                                    <dd data-tooltip-value="@key">@(Value(ammo, key) is { } value ? Format(value) : "—")</dd>
+                                    <dd data-tooltip-value="@key">@Display(ammo, key)</dd>
                                 </div>
                             }
                         </dl>
@@ -444,11 +444,12 @@
     private void Sort(string key) { Descending = SortKey == key && !Descending; SortKey = key; _save = true; }
     private IEnumerable<AmmoEntry> SortItems(IEnumerable<AmmoEntry> items) => SortKey is "Name" or "Caliber"
         ? Descending ? items.OrderByDescending(a => SortKey == "Name" ? a.Name : a.Caliber, StringComparer.OrdinalIgnoreCase) : items.OrderBy(a => SortKey == "Name" ? a.Name : a.Caliber, StringComparer.OrdinalIgnoreCase)
+        : ShotsToKillEvaluation.IsMetric(SortKey) ? (Descending ? items.OrderByDescending(a => a, ShotsToKillEvaluation.Comparer(SortKey)) : items.OrderBy(a => a, ShotsToKillEvaluation.Comparer(SortKey)))
         : Descending ? items.OrderByDescending(a => Value(a, SortKey)) : items.OrderBy(a => Value(a, SortKey));
     private AmmoMetric Metric(string key) => Snapshot.Metrics.First(m => m.Key == key);
     private string AxisLabel(string key) => Metric(key).DisplayLabel;
     private double? Value(AmmoEntry ammo, string key) => SnapshotBuilder.Value(ammo, key);
-    private string Display(AmmoEntry ammo, string key) => Value(ammo, key) is { } value ? Format(value) + (Metric(key).Unit.Length == 0 ? "" : " " + Metric(key).Unit) : "—";
+    private string Display(AmmoEntry ammo, string key) => ShotsToKillEvaluation.IsMetric(key) ? ShotsToKillEvaluation.Display(ammo, key, T.Culture) : Value(ammo, key) is { } value ? Format(value) + (Metric(key).Unit.Length == 0 ? "" : " " + Metric(key).Unit) : "—";
     private string Format(double value) => value.ToString(value != 0 && Math.Abs(value) < 0.001 ? "G3" : "0.###", T.Culture);
     private static string F(double value) => value.ToString("0.###", CultureInfo.InvariantCulture);
     private int Index(string id) => Array.IndexOf(Calibers.Select(c => c.Id).Order(StringComparer.Ordinal).ToArray(), id);

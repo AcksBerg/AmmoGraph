@@ -142,7 +142,15 @@ Higher damage, penetration, armor damage, accuracy, or bleeding are rated as bet
 
 Ricochet, fragmentation, base misfire, misfire, and feed-failure chances, along with bleeding deltas, are normalized from server fractions by multiplying by 100 for display. These same values are used for axes, tables, sorting, tooltips, and differences. Values already stored as percentages, such as armor damage, accuracy, and recoil, remain unchanged.
 
-Differences between percentages are absolute percentage points; bleeding deltas remain additive modifiers. Server data is not changed. AmmoGraph does not simulate armor classes or penetration probabilities.
+Differences between percentages are absolute percentage points; bleeding deltas remain additive modifiers. Server data is not changed. The interactive simulator models armor penetration and wear; Shots to Kill provides a separate, fixed reference-armor comparison. Both use captured server data and the shared ballistic engine.
+
+## Shots to Kill
+
+Open **Attributes and order** in settings and add **Shots to Kill · Armor Class N** to the axis list, tooltip or selected-ammunition metrics. Use the table column picker to add it to the table. Select an enabled metric in either axis dropdown, or click its table header to sort. Lower values are better. Eligible classes come from the loaded armor data; class 10 is excluded.
+
+A number is the upward-rounded average of successful trials, provided at least eight of ten deterministic trials kill an 85 HP chest target within 100 shots. `100+` means that success threshold was not met; it is not a measured kill count or a numeric graph coordinate. It remains visible in tables, tooltips and details, with no extra notice below the graph. `—` means no usable result. Comparisons involving a capped value show direction without an invented numeric difference.
+
+The reference calculation starts with fresh representative armor in every trial and uses 75% average pellet hits for buckshot. These inputs are independent of the interactive simulator's armor, magazine and pellet-hit settings. Pellet rows still describe shots of the whole cartridge. Results are computed once at startup and shared across visitors and languages. See [calculation details and assumptions](shots-to-kill.md) and the [illustrated interface tour](ui.md#shots-to-kill).
 
 ## Server configuration
 

@@ -5,6 +5,7 @@ namespace AmmoGraph.Core;
 
 public sealed record AmmoEntry(string Id, string Name, string CaliberId, string Caliber, bool IsBuckshot, FrozenDictionary<string, double?> Values, bool IsPellet = false, string? DefaultHiddenReason = null)
 {
+    public IReadOnlyDictionary<string, ShotsToKillResult>? ShotsToKill { get; init; }
     public string TemplateId => Id.Split(':')[0];
 }
 public sealed record AmmoMetric(string Key, string Label, string Unit = "")
@@ -99,7 +100,7 @@ public static class SnapshotBuilder
         return new(language, items.OrderBy(a => a.Caliber, StringComparer.OrdinalIgnoreCase).ThenBy(a => a.Name, StringComparer.OrdinalIgnoreCase).ToArray(), metrics);
     }
 
-    public static double? Value(AmmoEntry ammo, string key) => ammo.Values.GetValueOrDefault(key);
+    public static double? Value(AmmoEntry ammo, string key) => ShotsToKillEvaluation.IsMetric(key) ? ShotsToKillEvaluation.Result(ammo, key)?.Shots : ammo.Values.GetValueOrDefault(key);
     public static AmmoSnapshot RenameCalibers(AmmoSnapshot source, IReadOnlyDictionary<string,string> names)
     {
         var items = source.Items.Select(item =>

@@ -71,12 +71,7 @@ public static class BallisticsEngine
         var ammo = sequence.Select(id => catalog.Ammo.GetValueOrDefault(id) ?? throw new SimulationException("SimMissingAmmo", id)).ToArray();
         var caliber = draft.CaliberId.Split(':')[0];
         if (ammo.Any(a => a.Caliber != caliber)) throw new SimulationException("SimMixedCalibers");
-        foreach (var a in ammo)
-            if (!float.IsFinite(a.Damage) || a.Damage < 0 || !float.IsFinite(a.Penetration) || a.Penetration < 0
-                || !float.IsFinite(a.ArmorDamage) || a.ArmorDamage < 0 || !float.IsFinite(a.Deviation) || a.Deviation < 0
-                || a.Projectiles is < 1 or > 256 || a.MinFragments < 0 || a.MaxFragments < a.MinFragments || a.MaxFragments > 128
-                || !float.IsFinite(a.PenetrationDamageMod) || !float.IsFinite(a.FragmentationChance) || a.FragmentationChance is < 0 or > 1)
-                throw new SimulationException("SimMissingAmmoData", a.Id);
+        ValidateAmmo(ammo);
         if (!float.IsFinite(catalog.SoftArmorBluntModifier) || catalog.SoftArmorBluntModifier is < 0 or > 1)
             throw new SimulationException("SimMissingArmorData");
         var allLayers = catalog.Resolve(draft);
@@ -104,102 +99,153 @@ public static class BallisticsEngine
             {
                 var round = ammo[shotIndex];
                 var before = run == 0 ? durability.ToArray() : [];
-                var damage = 0f; var blunt = 0f; var penetrated = false; string? blocker = null; var fragments = 0;
-                var pelletHits = hitRandom.PelletHits(round.Projectiles, draft.PelletHitPercent);
-                for (var pellet = 0; pellet < pelletHits; pellet++)
-                {
-                    cancellation.ThrowIfCancellationRequested();
-                    var p = MathF.Max(0, round.Penetration + random.PenetrationDeviation() * round.Deviation);
-                    Process(round.Damage, p, round.FragmentationChance, 0, true);
-                }
-                if (!float.IsFinite(damage) || !float.IsFinite(blunt)) throw new SimulationException("SimMissingAmmoData", round.Id);
+                var outcome = Fire(catalog, round, layers, plateIndices, bodyIndices, body, durability, random, hitRandom, draft.PelletHitPercent, cancellation);
+                var (damage, blunt, penetrated, blocker, fragments, pelletHits) = outcome;
                 penetrationTotals[shotIndex] += penetrated ? 1 : 0;
                 damageTotals[shotIndex] += damage; bluntTotals[shotIndex] += blunt;
                 pelletTotals[shotIndex] += pelletHits;
                 for (var i = 0; i < layers.Length; i++) durabilityTotals[shotIndex][i] += durability[i];
                 if (run == 0) examples[shotIndex] = new(penetrated, damage, blunt, blocker, before, durability.ToArray(), fragments, pelletHits);
-
-                void Process(float shotDamage, float shotPen, float fragChance, int stage, bool canFragment)
-                {
-                    if (stage == 0 && !plateIndices.Any(i => durability[i] > 0)) stage = 1;
-                    var isPlate = stage == 0;
-                    var indices = isPlate ? plateIndices : bodyIndices;
-                    var roll = random.Next();
-                    var blocked = -1;
-                    // SetShotStatus evaluates all checks before applying durability damage.
-                    foreach (var i in indices)
-                        if (durability[i] > 0 && PenetrationChance(shotPen, Resistance(durability[i], layers[i].Maximum, layers[i].Resistance)) < roll * 100f)
-                        { blocked = i; break; }
-                    var continuationResistance = indices.Length == 0 ? 0f
-                        : Resistance(durability[indices[0]], layers[indices[0]].Maximum, layers[indices[0]].Resistance);
-                    var continuationFactor = indices.Length == 0 ? 1f : DamageFactor(shotPen, continuationResistance);
-                    var canContinue = blocked < 0 && shotPen * continuationFactor > (isPlate ? 0 : body.Level);
-                    var eventDamage = shotDamage;
-                    var eventPen = shotPen;
-                    var stopped = false;
-                    foreach (var i in indices)
-                    {
-                        var layer = layers[i];
-                        if (stopped) { eventDamage *= layer.BluntThroughput; continue; }
-                        if (durability[i] <= 0) continue;
-                        var r = Resistance(durability[i], layer.Maximum, layer.Resistance);
-                        var isBlocker = blocked == i;
-                        var loss = DurabilityLoss(eventPen, round.ArmorDamage, layer, r, isBlocker);
-                        if (isBlocker)
-                        {
-                            eventDamage *= layer.BluntThroughput * (layer.ReduceBlunt ? catalog.SoftArmorBluntModifier : 1f)
-                                * Math.Clamp(1f - .03f * (r - eventPen), .2f, 1f);
-                            stopped = true; blocker ??= layer.Id;
-                        }
-                        else
-                        {
-                            if (isPlate) eventDamage = 0;
-                            var factor = DamageFactor(eventPen, r);
-                            eventDamage *= factor; eventPen *= factor;
-                        }
-                        durability[i] = MathF.Max(0, durability[i] - loss);
-                    }
-                    if (!isPlate || blocked >= 0)
-                    {
-                        damage += eventDamage;
-                        if (blocked >= 0) blunt += eventDamage;
-                    }
-                    if (!isPlate)
-                    {
-                        if (blocked < 0) penetrated = true;
-                        // The modeled path ends at the first body impact. No exit-side or
-                        // speculative fragment HP bonus is added after that impact.
-                        return;
-                    }
-                    if (!canContinue) return;
-                    if (canFragment && fragChance > roll)
-                    {
-                        var count = round.MinFragments + (int)(random.Next() * (round.MaxFragments - round.MinFragments));
-                        fragments += count;
-                        if (count == 0 || round.MaxFragments == 0) return;
-                        // F16A.E01C: fragment damage and penetration are divided by MaxFragmentsCount.
-                        for (var f = 0; f < count; f++)
-                        {
-                            var fp = shotPen * .5f / round.MaxFragments;
-                            var fd = shotDamage * .5f / round.MaxFragments;
-                            var cf = indices.Length == 0 ? 1 : DamageFactor(fp, continuationResistance);
-                            Process(fd * cf, fp * cf, 0, 1, false);
-                        }
-                    }
-                    else
-                    {
-                        // Ideal plate profile: the extra prefab transition multiplier is 1.
-                        // F16A creates the continuation while ticking the collision,
-                        // before the hit callback applies wear to its copied DamageInfo.
-                        var cf = continuationFactor;
-                        Process(shotDamage * cf, shotPen * cf, fragChance, 1, canFragment);
-                    }
-                }
             }
             if ((run + 1) % Math.Max(1, request.Runs / 100) == 0) progress?.Report((run + 1) * 100 / request.Runs);
         }
         var stats = Enumerable.Range(0, sequence.Length).Select(i => new ShotStatistics(i + 1, sequence[i], penetrationTotals[i] * 100d / request.Runs,
             damageTotals[i] / request.Runs, bluntTotals[i] / request.Runs, durabilityTotals[i].Select(d => d / request.Runs).ToArray(), examples[i], pelletTotals[i] / (double)request.Runs)).ToArray();
         return new(draft, request.Runs, layers, stats, ["SimAssumptions"]);
+    }
+
+    private static void ValidateAmmo(IEnumerable<SimAmmo> ammo)
+    {
+        foreach (var a in ammo)
+            if (!float.IsFinite(a.Damage) || a.Damage < 0 || !float.IsFinite(a.Penetration) || a.Penetration < 0
+                || !float.IsFinite(a.ArmorDamage) || a.ArmorDamage < 0 || !float.IsFinite(a.Deviation) || a.Deviation < 0
+                || a.Projectiles is < 1 or > 256 || a.MinFragments < 0 || a.MaxFragments < a.MinFragments || a.MaxFragments > 128
+                || !float.IsFinite(a.PenetrationDamageMod) || !float.IsFinite(a.FragmentationChance) || a.FragmentationChance is < 0 or > 1)
+                throw new SimulationException("SimMissingAmmoData", a.Id);
+    }
+
+    // Each run has its own fixed stream; early termination cannot affect another run.
+    public static ShotsToKillResult EvaluateShotsToKill(SimulationCatalog catalog, SimAmmo ammo,
+        ProtectionLayer layer, CancellationToken cancellation = default)
+    {
+        ValidateAmmo([ammo]);
+        if (!ammo.IsBuckshot) ammo = ammo with { Projectiles = 1 };
+        if (!catalog.Bodies.TryGetValue("RibcageUp", out var body)
+            || !float.IsFinite(body.Level) || !float.IsFinite(body.Chance) || !float.IsFinite(body.DamageMod))
+            throw new SimulationException("SimUnsupportedCollider", "RibcageUp");
+        ProtectionLayer[] layers = [layer];
+        int[] plates = [0];
+        int[] bodies = [];
+        var kills = new int?[10];
+        for (var run = 0; run < kills.Length; run++)
+        {
+            var seed = unchecked(12345 + run * 104729);
+            var random = new RandomStream(seed);
+            var hits = new RandomStream(unchecked(seed ^ 0x51ED270B));
+            float[] durability = [layer.Maximum];
+            double cumulative = 0;
+            for (var shot = 1; shot <= 100; shot++)
+            {
+                cancellation.ThrowIfCancellationRequested();
+                cumulative += Fire(catalog, ammo, layers, plates, bodies, body, durability, random, hits, 75, cancellation).Damage;
+                if (cumulative >= SimulationResult.ChestHealth) { kills[run] = shot; break; }
+            }
+        }
+        return ShotsToKillResult.Aggregate(kills);
+    }
+
+    private readonly record struct ShotOutcome(float Damage, float Blunt, bool Penetrated, string? Blocker, int Fragments, int PelletHits);
+
+    private static ShotOutcome Fire(SimulationCatalog catalog, SimAmmo round, ProtectionLayer[] layers,
+        int[] plateIndices, int[] bodyIndices, BodyBallistics body, float[] durability,
+        RandomStream random, RandomStream hitRandom, double pelletHitPercent, CancellationToken cancellation)
+    {
+        var damage = 0f; var blunt = 0f; var penetrated = false; string? blocker = null; var fragments = 0;
+        var pelletHits = hitRandom.PelletHits(round.Projectiles, pelletHitPercent);
+        for (var pellet = 0; pellet < pelletHits; pellet++)
+        {
+            cancellation.ThrowIfCancellationRequested();
+            var p = MathF.Max(0, round.Penetration + random.PenetrationDeviation() * round.Deviation);
+            Process(round.Damage, p, round.FragmentationChance, 0, true);
+        }
+        if (!float.IsFinite(damage) || !float.IsFinite(blunt)) throw new SimulationException("SimMissingAmmoData", round.Id);
+        return new(damage, blunt, penetrated, blocker, fragments, pelletHits);
+
+        void Process(float shotDamage, float shotPen, float fragChance, int stage, bool canFragment)
+        {
+            if (stage == 0 && !plateIndices.Any(i => durability[i] > 0)) stage = 1;
+            var isPlate = stage == 0;
+            var indices = isPlate ? plateIndices : bodyIndices;
+            var roll = random.Next();
+            var blocked = -1;
+            // SetShotStatus evaluates all checks before applying durability damage.
+            foreach (var i in indices)
+                if (durability[i] > 0 && PenetrationChance(shotPen, Resistance(durability[i], layers[i].Maximum, layers[i].Resistance)) < roll * 100f)
+                { blocked = i; break; }
+            var continuationResistance = indices.Length == 0 ? 0f
+                : Resistance(durability[indices[0]], layers[indices[0]].Maximum, layers[indices[0]].Resistance);
+            var continuationFactor = indices.Length == 0 ? 1f : DamageFactor(shotPen, continuationResistance);
+            var canContinue = blocked < 0 && shotPen * continuationFactor > (isPlate ? 0 : body.Level);
+            var eventDamage = shotDamage;
+            var eventPen = shotPen;
+            var stopped = false;
+            foreach (var i in indices)
+            {
+                var layer = layers[i];
+                if (stopped) { eventDamage *= layer.BluntThroughput; continue; }
+                if (durability[i] <= 0) continue;
+                var r = Resistance(durability[i], layer.Maximum, layer.Resistance);
+                var isBlocker = blocked == i;
+                var loss = DurabilityLoss(eventPen, round.ArmorDamage, layer, r, isBlocker);
+                if (isBlocker)
+                {
+                    eventDamage *= layer.BluntThroughput * (layer.ReduceBlunt ? catalog.SoftArmorBluntModifier : 1f)
+                        * Math.Clamp(1f - .03f * (r - eventPen), .2f, 1f);
+                    stopped = true; blocker ??= layer.Id;
+                }
+                else
+                {
+                    if (isPlate) eventDamage = 0;
+                    var factor = DamageFactor(eventPen, r);
+                    eventDamage *= factor; eventPen *= factor;
+                }
+                durability[i] = MathF.Max(0, durability[i] - loss);
+            }
+            if (!isPlate || blocked >= 0)
+            {
+                damage += eventDamage;
+                if (blocked >= 0) blunt += eventDamage;
+            }
+            if (!isPlate)
+            {
+                if (blocked < 0) penetrated = true;
+                // The modeled path ends at the first body impact. No exit-side or
+                // speculative fragment HP bonus is added after that impact.
+                return;
+            }
+            if (!canContinue) return;
+            if (canFragment && fragChance > roll)
+            {
+                var count = round.MinFragments + (int)(random.Next() * (round.MaxFragments - round.MinFragments));
+                fragments += count;
+                if (count == 0 || round.MaxFragments == 0) return;
+                // F16A.E01C: fragment damage and penetration are divided by MaxFragmentsCount.
+                for (var f = 0; f < count; f++)
+                {
+                    var fp = shotPen * .5f / round.MaxFragments;
+                    var fd = shotDamage * .5f / round.MaxFragments;
+                    var cf = indices.Length == 0 ? 1 : DamageFactor(fp, continuationResistance);
+                    Process(fd * cf, fp * cf, 0, 1, false);
+                }
+            }
+            else
+            {
+                // Ideal plate profile: the extra prefab transition multiplier is 1.
+                // F16A creates the continuation while ticking the collision,
+                // before the hit callback applies wear to its copied DamageInfo.
+                var cf = continuationFactor;
+                Process(shotDamage * cf, shotPen * cf, fragChance, 1, canFragment);
+            }
+        }
     }
 }

@@ -13,6 +13,8 @@ The header cartridge button opens a ballistics simulator: build a mixed magazine
 | I want to … | Read |
 | --- | --- |
 | use and configure the application | [Usage and configuration](docs/usage.md) |
+| understand Shots to Kill values and reference armor | [Shots to Kill](docs/shots-to-kill.md) |
+| review changes after v0.23.6 | [Cumulative release notes](docs/release-notes-since-0.23.6.md) |
 | build magazines and simulate armor damage | [Ballistics simulator](docs/simulation.md) |
 | explore each part of the interface through screenshots | [Interface tour](docs/ui.md) |
 | understand the code as a new developer | [Developer guide](docs/development.md) |
@@ -51,6 +53,7 @@ Start the SPT server, then open **https://localhost:6969/AmmoGraph**, for exampl
 
 - Reads ammunition templates and translations once during server startup.
 - Displays damage, penetration, velocity, and other statistics in the chart, table, and details panel.
+- Evaluates [Shots to Kill against representative armor classes](docs/shots-to-kill.md) once per loaded dataset, with shared deterministic results.
 - Supports zooming, panning, buckshot/pellet views, language selection, and light and dark themes.
 - Fans out grouped chart points on hover, with dashed connectors and individual ammunition selection.
 - Stores personal views, names, and exclusions in each visitor's browser.

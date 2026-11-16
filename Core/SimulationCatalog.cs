@@ -88,7 +88,7 @@ public sealed class SimulationCatalog
             return new SimAmmo(t.Id.ToString(), p.Caliber ?? "", Number(p.Damage), p.PenetrationPower ?? float.NaN,
                 Number(p.PenetrationPowerDiviation ?? p.PenetrationPowerDeviation ?? 0), Number(p.ArmorDamage) / 100f,
                 (int)(p.ProjectileCount ?? 1), Number(p.FragmentationChance ?? 0), p.MinFragmentsCount ?? 0,
-                p.MaxFragmentsCount ?? 0, Number(p.PenetrationDamageMod ?? 0));
+                p.MaxFragmentsCount ?? 0, Number(p.PenetrationDamageMod ?? 0), p.AmmoType == "buckshot");
         });
         var cfg = globals.Configuration;
         var bodies = typeof(BodyPartColliderSettings).GetProperties()

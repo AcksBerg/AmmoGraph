@@ -59,7 +59,7 @@ public sealed class SimulationException(string key, string? detail = null) : Exc
     public string Key { get; } = key;
 }
 public sealed record SimAmmo(string Id, string Caliber, float Damage, float Penetration, float Deviation,
-    float ArmorDamage, int Projectiles, float FragmentationChance, int MinFragments, int MaxFragments, float PenetrationDamageMod);
+    float ArmorDamage, int Projectiles, float FragmentationChance, int MinFragments, int MaxFragments, float PenetrationDamageMod, bool IsBuckshot = false);
 public sealed record ArmorPart(string Id, string Name, int Class, string Material, float Maximum,
     float BluntThroughput, string[] BodyColliders, string[] PlateColliders, string[] Conflicts);
 public sealed record ArmorSlot(string Id, bool Locked, bool Required, bool ReduceBlunt, string? DefaultPart,

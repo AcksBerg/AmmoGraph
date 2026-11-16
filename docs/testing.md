@@ -39,6 +39,7 @@ Browsers use fresh temporary contexts, leaving the personal Chrome profile untou
 | Magazine capacity, equipment across calibers, death marker, zoom/pan and restoration | `node AmmoGraph/tests/simulation-release.mjs` against the same test host |
 | Horizontal-only simulator zoom/pan, fixed vertical scales, shot-1 labels, edge padding, and constant highlight widths | `node AmmoGraph/tests/simulation-horizontal.mjs` (defaults to the live SPT server; `AMMOGRAPH_URL` overrides the address) |
 | Shared magazine capacity, sampled pellet hits, minimum one hit, and preference migration | `node AmmoGraph/tests/simulation-pellets.mjs` (same server selection) |
+| Shots to Kill, capped graph results, integer display and comparisons | `node AmmoGraph/tests/shots-to-kill.mjs` against the separate simulation test host |
 | Table, sorting, comparisons | `node AmmoGraph/tests/table.mjs` |
 | Menus, keyboard, percentage display | `node AmmoGraph/tests/menus.mjs` |
 | Zoom, pan, and legend | `node AmmoGraph/tests/navigation.mjs` |
@@ -86,6 +87,18 @@ node AmmoGraph/tests/screenshots.mjs
 It creates a fresh browser context with an English locale, selects English and a reference cartridge, and opens the settings sections. It writes PNG files into `docs/images`. It does not edit personal settings in the normal browser or server configuration files. At least one cartridge must be visible in the default selection.
 
 Inspect the generated images for loaded data, readable labels, the correct menu sections, and useful framing. The script captures views; it is not a complete functional test.
+
+### Shots to Kill screenshots
+
+Build and start the separate [simulation test host](simulation.md#implementation-and-validation). It reads the local SPT dataset and exposes the read-only fixture endpoint needed by the capture script. It is not installed into SPT or included in releases.
+
+```powershell
+$env:AMMOGRAPH_URL = 'http://127.0.0.1:6973/AmmoGraph'
+node AmmoGraph/tests/shots-to-kill.mjs
+node AmmoGraph/tests/screenshots-shots-to-kill.mjs
+```
+
+The screenshot script writes `shots-to-kill-graph.png`, `shots-to-kill-table.png` and `shots-to-kill-attributes.png` into `docs/images`. It selects the highest eligible reference class and calibers containing successful and capped outcomes from the actual loaded data, with a fresh English browser context. The dataset must provide both outcomes. Inspect all three images before committing documentation.
 
 ## Keeping documentation current
 

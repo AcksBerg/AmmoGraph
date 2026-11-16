@@ -1,4 +1,4 @@
-﻿# Understanding the code
+# Understanding the code
 
 [Project overview](../README.md) · [Interface tour](ui.md) · [Interfaces](interfaces.md) · [Testing](testing.md)
 
@@ -28,7 +28,7 @@ A `.razor` file combines HTML with C#. For example, `@foreach` generates one tab
 | InteractiveServer | The interface's C# code runs on the server. Events and display updates travel over the Blazor connection. |
 | Rendering | Creating or updating the visible interface from its current state. |
 | JavaScript interop | Calls between C# and JavaScript, such as reading browser cookies. |
-| Metric | A numeric field such as `Damage`, described by a key, label, and unit. |
+| Metric | A selectable statistic described by a key, label, and unit. Most contain numbers; Shots to Kill can also contain a capped or failed result. |
 | SVG | An image format built from geometric elements. AmmoGraph uses it to draw the chart without an additional chart library. |
 | FrozenDictionary | A dictionary that cannot be changed after creation. The project uses it for metric values and language snapshots, among other things. |
 
@@ -40,6 +40,10 @@ flowchart LR
         Mods[SPT and earlier mod startup phases] --> Tables[TemplateTable and language data]
         Tables --> Catalog[AmmoCatalog]
         Config[config/*.json] --> Catalog
+        Tables --> Simulation[SimulationCatalog: ammunition and armor]
+        Simulation --> Evaluation[ShotsToKillEvaluation]
+        Evaluation --> Engine[Shared BallisticsEngine]
+        Evaluation -->|Shared per-template results| Catalog
         Catalog --> Builder[SnapshotBuilder]
         Builder --> Snapshots[Prepared language snapshots]
         Snapshots --> Page[AmmoGraphPage · Blazor]
@@ -65,6 +69,7 @@ All visitors share the catalog. Selection, language, and personal names belong t
 | [Core/DefaultExclusions.cs](../Core/DefaultExclusions.cs) | Reading default exclusions and identifying matching templates. |
 | [Core/AmmoSearch.cs](../Core/AmmoSearch.cs) | Shared search normalization and matching. |
 | [Core/AmmoComparison.cs](../Core/AmmoComparison.cs) | Comparison delta, arrow direction, and rating. |
+| [Core/ShotsToKill.cs](../Core/ShotsToKill.cs) | Reference armor profiles, startup evaluation, result states, snapshot attachment, and sorting. |
 | [Core/ChartAxis.cs](../Core/ChartAxis.cs) | Axis bounds and tick marks. |
 | [Core/UiText.cs](../Core/UiText.cs) | Interface translations, language codes, number culture, and text direction. |
 | [Web/GraphLayout.razor](../Web/GraphLayout.razor), [Web/GraphStyles.cs](../Web/GraphStyles.cs) | Page layout and embedded CSS emitted before the page content. |
@@ -82,8 +87,11 @@ flowchart TD
     Early --> Load[AmmoCatalog.OnLoadAsync]
     Load --> Config[Read caliber names and exclusions]
     Config --> Languages[Determine default and available languages]
-    Languages --> Base[SnapshotBuilder.Build for each language]
-    Base --> Names[RenameCalibers with loaded names]
+    Languages --> Simulation[Capture SimulationCatalog from loaded templates and globals]
+    Simulation --> Evaluate[Compute Shots to Kill once per template and reference class]
+    Evaluate --> Base[SnapshotBuilder.Build for each language]
+    Base --> Attach[Attach shared results and translated metric labels]
+    Attach --> Names[RenameCalibers with loaded names]
     Names --> Store[Store snapshots and select default language]
     Store --> Ready[Set Ready = true and log summary]
 ```
@@ -93,6 +101,8 @@ flowchart TD
 `OnLoadAsync` reads the JSON configuration beside the installed DLL. It first creates `_baseSnapshots` without the configured display names, then derives `_snapshots` with the effective caliber names. The base snapshots allow a visitor to suppress a name mapping personally and fall back to the base label.
 
 `Ready` is set only after the dataset has been built. Until then, the page shows a loading message. There is no automatic rebuild after startup.
+
+Shots to Kill is calculated rather than read from an ammunition property. `ShotsToKillEvaluation` builds one representative profile per eligible loaded armor class, excluding class 10, then calls the same ballistic engine as the interactive simulator. Each ammunition/profile pair runs ten deterministic trials against 85 chest HP, with a 100-shot limit. At least eight trials must succeed; only successful shot counts contribute to the average, rounded upward. Otherwise the result is capped (`100+`). These dictionaries are shared across language snapshots and visitors. See the [calculation guide](shots-to-kill.md) for exact inputs and limits.
 
 ## 6. From a template to a chart point
 
@@ -117,6 +127,8 @@ For a simple example, suppose SPT provides a cartridge with `Damage = 50`, `Pene
 5. The page filters the entries and draws a point at `(50, 30)` when X is damage and Y is penetration.
 
 A missing or non-finite number becomes `null`. The table displays it as `—`. An entry without a valid X or Y value does not produce a point. Entries with identical coordinates share a point group.
+
+For `ShotsToKillClassN`, `SnapshotBuilder.Value` reads the separate `AmmoEntry.ShotsToKill` dictionary. Only `Success` supplies a numeric coordinate. `Capped` displays `100+` and `Failed` displays `—`; neither is plotted on an axis using that metric. A successful kill on shot 100 remains distinct from a capped result. Comparisons rate fewer shots as better and omit numeric deltas when one result is capped.
 
 ### Buckshot needs two views
 
@@ -198,6 +210,8 @@ JavaScript handles frequent browser movements. Zooming updates SVG positions and
 5. Decide in `AmmoComparison.Create` whether higher or lower values are better. Without a mapping, the rating stays neutral.
 6. Change the default lists in `AmmoGraphPage` only if the metric should appear by default. The catalog already makes new metrics available in the selection controls.
 7. Check data preparation and comparisons in the C# check program, then selection, units, and rendering in the browser. See [testing](testing.md).
+
+Calculated statistics such as Shots to Kill use a separate evaluator and result model. Do not add their synthetic keys to the template-property reflection list. Both whole-load and pellet rows share the cartridge's Shots to Kill results.
 
 ### Change interface text
 

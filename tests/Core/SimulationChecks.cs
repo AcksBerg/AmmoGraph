@@ -162,6 +162,8 @@ static class SimulationChecks
         var separate = BallisticsEngine.Run(Copy(catalog, separateParts, zeroMaterials, stableAmmo, separateCarriers), new(combined, 2000));
         Check(separate.Shots[0].PenetrationPercent < withInsert.Shots[0].PenetrationPercent && separate.Shots[0].Damage < withInsert.Shots[0].Damage, "A SEPARATE body insert receives reduced penetration, a new roll and additional damage damping");
 
+        ShotsToKillChecks.Run(catalog);
+
         // Mod compatibility: mutate loaded objects, then capture a fresh immutable catalog.
         var ammoTemplate = templates[defaultDraft.Magazine.Middle[0].TemplateId];
         var originalDamage = ammoTemplate.Properties!.Damage;

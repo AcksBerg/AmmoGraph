@@ -1,4 +1,4 @@
-﻿# Interfaces and data contracts
+# Interfaces and data contracts
 
 [Project overview](../README.md) · [Developer guide](development.md)
 
@@ -28,13 +28,15 @@ The simulator adds `SimulationCatalog`, captured in the same startup hook from t
 
 `SimulatorWorkspace` shares magazine capacity, equipment, and `SimulatorDraft.PelletHitPercent` across calibers while retaining separate ammunition patterns. Capacity ranges from 1–100. The pellet percentage ranges from 0–100 and defaults to 100 in older preferences. `ShotStatistics.MeanPelletHits` reports the sampled mean; `ExampleShot.PelletHits` reports the example's actual count. Only hitting projectiles are processed by the damage and armor calculations, with a minimum of one hit per cartridge.
 
+`AmmoEntry.ShotsToKill` holds shared per-template result dictionaries keyed by `ShotsToKillClassN`. `ShotsToKillResult` separates `Success` (positive integer `Shots`), `Capped` (no numeric value) and `Failed`; absence remains distinct. `SnapshotBuilder.Value` returns coordinates only for successful results. `ShotsToKillEvaluation.Comparer` orders successful values ascending, then capped outcomes, then missing/failed values. `AmmoComparison.HasNumericDelta` is false for capped comparisons, so UI components show direction and tone without a fabricated numeric difference. See [reference armor evaluation](shots-to-kill.md).
+
 ## 2. SPT registration
 
 Sources: [Metadata.cs](../Metadata.cs), [AmmoCatalog.cs](../Core/AmmoCatalog.cs).
 
 | Contract | Implementation | Purpose |
 | --- | --- | --- |
-| `IModMetadata` | `Metadata` | Mod GUID `com.acksberg.ammograph`, name `AmmoGraph`, version `0.24.3`, MIT license, and SPT compatibility `>=4.1.4`. |
+| `IModMetadata` | `Metadata` | Mod GUID `com.acksberg.ammograph`, name `AmmoGraph`, version `0.25.1`, MIT license, and SPT compatibility `>=4.1.4`. |
 | `IModBlazorMetadata` | `WWWRootUrl = "ammo-graph"`, `HomePage = "/AmmoGraph"` | SPT serves the web assets and links to the mod page. |
 | `IOnLoad` | `AmmoCatalog.OnLoadAsync(CancellationToken)` | Build the dataset once during server startup. |
 | `[Injectable(...)]` | `Singleton`, priority `int.MaxValue` | One shared catalog, running after ordinary earlier startup hooks. |
@@ -81,7 +83,9 @@ Source: [AmmoSnapshot.cs](../Core/AmmoSnapshot.cs).
 | `AmmoEntry.IsBuckshot` / `IsPellet` | `bool` | Flags identifying buckshot and pellet views. |
 | `AmmoEntry.Values` | `FrozenDictionary<string, double?>` | Numbers indexed by metric key; missing or non-finite values become `null`. |
 | `AmmoEntry.DefaultHiddenReason` | `string?` | Ammunition-level default exclusion reason, such as `Unused`, `Airsoft`, or `Configured`; does not delete data. Caliber exclusions are checked separately. |
-| `AmmoMetric.Key` | `string` | Exact property name in `TemplateItemProperties`, such as `Damage`. |
+| `AmmoEntry.ShotsToKill` | `IReadOnlyDictionary<string, ShotsToKillResult>?` | Shared per-template results; keys have the form `ShotsToKillClassN`. Whole-load and pellet variants use the same results. |
+| `ShotsToKillResult` | `State`, `Shots`, `SuccessfulRuns` | Success has an integer shot count; capped and failed results have no numeric count. |
+| `AmmoMetric.Key` | `string` | A template property such as `Damage`, or a calculated key such as `ShotsToKillClass6`. |
 | `AmmoMetric.Label` / `Unit` | `string` | Translated name and unit. `DisplayLabel` appends the unit in parentheses. |
 
 Important methods:
@@ -98,7 +102,7 @@ Important methods:
 | `ChartAxis.Create(values)` | Finite numbers → lower/upper bounds and tick marks; empty input uses 0 to 1. |
 | `AmmoComparison.Create(baseline, candidate, key)` | Reference, candidate, and metric → delta, arrow, and color class; returns `null` if a value is missing. |
 
-Percentages are normalized in the snapshot. The table, axes, and comparisons use the same numbers. The difference between two percentages is expressed in percentage points. `AmmoComparison.Delta` is always `candidate − reference`; its rating also depends on whether higher or lower values are better.
+Percentages are normalized in the snapshot. The table, axes, and comparisons use the same numbers. The difference between two percentages is expressed in percentage points. `AmmoComparison.Delta` is meaningful only when `HasNumericDelta` is true. For numeric comparisons it is `candidate − reference`; its rating also depends on whether higher or lower values are better.
 
 ## 5. C# ↔ JavaScript
 

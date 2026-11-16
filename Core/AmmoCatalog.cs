@@ -35,14 +35,15 @@ public sealed class AmmoCatalog(TemplateTable templates, GlobalTable globals, Lo
         var languages = locales.GetServerSupportedLocales().Concat(localeTable.Global.Keys).Append(language).Append("en")
             .Select(UiText.LanguageCode).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
         Languages = languages.Select(code => new LanguageChoice(code, UiText.NativeName(code))).OrderBy(l => l.Name, StringComparer.OrdinalIgnoreCase).ToArray();
-        _baseSnapshots = languages.ToFrozenDictionary(code => code, code => SnapshotBuilder.Build(templates.Items.Values, code,
-            localeTable.Global.ContainsKey(SnapshotBuilder.GameLocale(code)) ? locales.GetLocaleDb(SnapshotBuilder.GameLocale(code)) : new Dictionary<string, string>(), english, FrozenDictionary<string,string>.Empty, ExclusionRules));
-        CaliberNames = caliberNames;
-        _snapshots = _baseSnapshots.ToFrozenDictionary(kv => kv.Key,kv => SnapshotBuilder.RenameCalibers(kv.Value,caliberNames));
-        Snapshot = _snapshots[language];
         Simulation = SimulationCatalog.Build(templates.Items.Values, globals, languages.ToDictionary(code => code,
             code => (IReadOnlyDictionary<string, string>)(localeTable.Global.ContainsKey(SnapshotBuilder.GameLocale(code))
                 ? locales.GetLocaleDb(SnapshotBuilder.GameLocale(code)) : new Dictionary<string, string>())));
+        var shotsToKill = ShotsToKillEvaluation.Compute(Simulation, cancellationToken);
+        _baseSnapshots = languages.ToFrozenDictionary(code => code, code => shotsToKill.Attach(SnapshotBuilder.Build(templates.Items.Values, code,
+            localeTable.Global.ContainsKey(SnapshotBuilder.GameLocale(code)) ? locales.GetLocaleDb(SnapshotBuilder.GameLocale(code)) : new Dictionary<string, string>(), english, FrozenDictionary<string,string>.Empty, ExclusionRules)));
+        CaliberNames = caliberNames;
+        _snapshots = _baseSnapshots.ToFrozenDictionary(kv => kv.Key,kv => SnapshotBuilder.RenameCalibers(kv.Value,caliberNames));
+        Snapshot = _snapshots[language];
         Ready = true;
         logger.Info($"[AmmoGraph] Loaded {Snapshot.Items.Count} ammunition variants in {Languages.Count} languages (default: {language}).");
         return Task.CompletedTask;

@@ -1,4 +1,4 @@
-﻿# Interface tour
+# Interface tour
 
 [Project overview](../README.md) · [Usage](usage.md) · [Developer guide](development.md)
 
@@ -35,6 +35,22 @@ In the code: SVG fan members and `Select` in [AmmoGraphPage](../Web/AmmoGraphPag
 Numeric cells show the cartridge's value and, when a reference is selected, its difference from that reference. Search filters both the table and chart while the table is visible. The eye icon opens column selection; table headers control sorting.
 
 In the code: `VisibleItems`, `OrderedColumns`, and `SortItems` in [AmmoGraphPage](../Web/AmmoGraphPage.razor), numeric cells in [TableValue](../Web/TableValue.razor), and column selection in [ColumnPicker](../Web/ColumnPicker.razor).
+
+## Shots to Kill
+
+Add **Shots to Kill · Armor Class N** under **Attributes and order**, then select it in either axis dropdown. The table has its own column picker. Classes reflect eligible loaded armor data; class 10 is excluded.
+
+![English attribute settings with reference-armor Shots to Kill metrics available and armor class 6 selected for the axes](images/shots-to-kill-attributes.png)
+
+![Shots to Kill against armor class 6 on the horizontal axis, with damage on the vertical axis and the selected cartridge's result in the details panel](images/shots-to-kill-graph.png)
+
+Lower shot counts are better. Only successful numeric results receive coordinates on an axis using Shots to Kill. The table keeps capped results as **100+**, without an additional graph notice. Such comparisons show direction without a numeric difference.
+
+![Table sorted by armor-class-6 Shots to Kill, showing capped 100+ results and comparisons with a successful reference cartridge](images/shots-to-kill-table.png)
+
+These are fixed reference calculations against an 85 HP chest target, separate from the interactive magazine settings. See [Shots to Kill](shots-to-kill.md) for averaging, success thresholds and the fixed buckshot assumptions.
+
+In the code: [ShotsToKillEvaluation](../Core/ShotsToKill.cs) prepares and attaches results; [AmmoComparison](../Core/AmmoComparison.cs), [TableValue](../Web/TableValue.razor), and [ComparedValue](../Web/ComparedValue.razor) handle ordering and display.
 
 ## View settings
 

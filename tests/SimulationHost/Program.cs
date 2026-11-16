@@ -28,7 +28,9 @@ var locales = languages.ToDictionary(l => l, l =>
 });
 var names = CaliberNameMap.Defaults;
 var rules = DefaultExclusions.Defaults;
-var snapshots = languages.ToFrozenDictionary(l => l, l => SnapshotBuilder.Build(templates.Values, l, locales[l], locales["en"], exclusionRules: rules));
+var simulation = SimulationCatalog.Build(templates.Values, globals, locales);
+var shotsToKill = ShotsToKillEvaluation.Compute(simulation);
+var snapshots = languages.ToFrozenDictionary(l => l, l => shotsToKill.Attach(SnapshotBuilder.Build(templates.Values, l, locales[l], locales["en"], exclusionRules: rules)));
 // This test-only host uses read-only database fixtures instead of starting SPT.
 // Reflection supplies AmmoCatalog's startup outputs; no SPT profile is loaded.
 var catalog = (AmmoCatalog)RuntimeHelpers.GetUninitializedObject(typeof(AmmoCatalog));
@@ -39,7 +41,7 @@ Field("_snapshots", snapshots.ToFrozenDictionary(p => p.Key, p => SnapshotBuilde
 Property("Snapshot", SnapshotBuilder.RenameCalibers(snapshots["de"], names));
 Property("Languages", (IReadOnlyList<LanguageChoice>)languages.Select(l => new LanguageChoice(l, UiText.NativeName(l))).ToArray());
 Property("CaliberNames", names); Property("ExclusionRules", rules);
-Property("Simulation", SimulationCatalog.Build(templates.Values, globals, locales)); Property("Ready", true);
+Property("Simulation", simulation); Property("Ready", true);
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Logging.AddFilter("Microsoft.AspNetCore", LogLevel.Warning);
@@ -51,6 +53,15 @@ builder.Services.AddDataProtection().UseEphemeralDataProtectionProvider();
 var app = builder.Build();
 app.UseAntiforgery();
 app.MapStaticAssets();
+app.MapGet("/test/shots-to-kill", () => Results.Json(new
+{
+    Metrics = snapshots["en"].Metrics.Where(m => ShotsToKillEvaluation.IsMetric(m.Key)),
+    Items = snapshots["en"].Items.Where(a => !a.IsPellet).Select(a => new
+    {
+        a.Id, a.CaliberId,
+        Values = a.ShotsToKill!.ToDictionary(kv => kv.Key, kv => new { State = kv.Value.State.ToString(), kv.Value.Shots })
+    })
+}));
 app.MapGet("/favicon.ico", () => Results.NoContent());
 app.MapGet("/ammo-graph/{file}", (string file) =>
 {

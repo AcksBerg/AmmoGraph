@@ -82,7 +82,9 @@
     "SimPelletHitHint": "At least one pellet hits per shot. Lower averages use this minimum. Single-projectile ammunition is unaffected.",
     "SimMeanPelletHits": "Mean pellets hitting",
     "SimPelletHits": "Pellets hitting",
-    "SimInvalidPelletHitRate": "Pellet hit percentage must be between 0 and 100."
+    "SimInvalidPelletHitRate": "Pellet hit percentage must be between 0 and 100.",
+    "ShotsToKill": "Shots to Kill",
+    "ArmorClass": "Armor Class"
   },
   "de": {
     "SimTitle": "Ballistiksimulator",
@@ -167,7 +169,9 @@
     "SimPelletHitHint": "Pro Schuss trifft mindestens ein Pellet. Niedrigere Mittelwerte verwenden dieses Minimum. Einzelgeschosse bleiben unverändert.",
     "SimMeanPelletHits": "Mittlere Pellet-Treffer",
     "SimPelletHits": "Pellet-Treffer",
-    "SimInvalidPelletHitRate": "Die Pellet-Trefferquote muss zwischen 0 und 100 liegen."
+    "SimInvalidPelletHitRate": "Die Pellet-Trefferquote muss zwischen 0 und 100 liegen.",
+    "ShotsToKill": "Schüsse bis zum Kill",
+    "ArmorClass": "Rüstungsklasse"
   },
   "fr": {
     "SimTitle": "Simulateur balistique",
@@ -252,7 +256,9 @@
     "SimPelletHitHint": "Au moins un plomb touche par tir. Les moyennes inférieures utilisent ce minimum. Les projectiles uniques ne changent pas.",
     "SimMeanPelletHits": "Nombre moyen de plombs touchant",
     "SimPelletHits": "Plombs touchant",
-    "SimInvalidPelletHitRate": "Le pourcentage doit être compris entre 0 et 100."
+    "SimInvalidPelletHitRate": "Le pourcentage doit être compris entre 0 et 100.",
+    "ShotsToKill": "Shots to Kill",
+    "ArmorClass": "Armor Class"
   },
   "es-es": {
     "SimTitle": "Simulador balístico",
@@ -337,7 +343,9 @@
     "SimPelletHitHint": "Al menos un perdigón impacta por disparo. Las medias inferiores usan ese mínimo. Los proyectiles únicos no cambian.",
     "SimMeanPelletHits": "Media de perdigones que impactan",
     "SimPelletHits": "Perdigones que impactan",
-    "SimInvalidPelletHitRate": "El porcentaje debe estar entre 0 y 100."
+    "SimInvalidPelletHitRate": "El porcentaje debe estar entre 0 y 100.",
+    "ShotsToKill": "Shots to Kill",
+    "ArmorClass": "Armor Class"
   },
   "pt-pt": {
     "SimTitle": "Simulador balístico",
@@ -422,7 +430,9 @@
     "SimPelletHitHint": "Pelo menos um chumbo acerta por disparo. Médias inferiores usam este mínimo. Projéteis únicos não mudam.",
     "SimMeanPelletHits": "Média de chumbos que acertam",
     "SimPelletHits": "Chumbos que acertam",
-    "SimInvalidPelletHitRate": "A percentagem deve estar entre 0 e 100."
+    "SimInvalidPelletHitRate": "A percentagem deve estar entre 0 e 100.",
+    "ShotsToKill": "Shots to Kill",
+    "ArmorClass": "Armor Class"
   },
   "it": {
     "SimTitle": "Simulatore balistico",
@@ -507,7 +517,9 @@
     "SimPelletHitHint": "Almeno un pallino colpisce per tiro. Le medie inferiori usano questo minimo. I proiettili singoli non cambiano.",
     "SimMeanPelletHits": "Media dei pallini a segno",
     "SimPelletHits": "Pallini a segno",
-    "SimInvalidPelletHitRate": "La percentuale deve essere tra 0 e 100."
+    "SimInvalidPelletHitRate": "La percentuale deve essere tra 0 e 100.",
+    "ShotsToKill": "Shots to Kill",
+    "ArmorClass": "Armor Class"
   },
   "nl": {
     "SimTitle": "Ballistische simulator",
@@ -592,7 +604,9 @@
     "SimPelletHitHint": "Minstens één hagelkorrel raakt per schot. Lagere gemiddelden gebruiken dit minimum. Enkele projectielen blijven ongewijzigd.",
     "SimMeanPelletHits": "Gemiddeld geraakte hagelkorrels",
     "SimPelletHits": "Geraakte hagelkorrels",
-    "SimInvalidPelletHitRate": "Het percentage moet tussen 0 en 100 liggen."
+    "SimInvalidPelletHitRate": "Het percentage moet tussen 0 en 100 liggen.",
+    "ShotsToKill": "Shots to Kill",
+    "ArmorClass": "Armor Class"
   },
   "da": {
     "SimTitle": "Ballistiksimulator",
@@ -677,7 +691,9 @@
     "SimPelletHitHint": "Mindst ét hagl rammer pr. skud. Lavere gennemsnit bruger dette minimum. Enkeltprojektiler ændres ikke.",
     "SimMeanPelletHits": "Gennemsnitligt antal hagltræffere",
     "SimPelletHits": "Hagl der rammer",
-    "SimInvalidPelletHitRate": "Procenten skal være mellem 0 og 100."
+    "SimInvalidPelletHitRate": "Procenten skal være mellem 0 og 100.",
+    "ShotsToKill": "Shots to Kill",
+    "ArmorClass": "Armor Class"
   },
   "no": {
     "SimTitle": "Ballistikksimulator",
@@ -762,7 +778,9 @@
     "SimPelletHitHint": "Minst ett hagl treffer per skudd. Lavere gjennomsnitt bruker dette minimumet. Enkeltprosjektiler endres ikke.",
     "SimMeanPelletHits": "Gjennomsnittlig antall hagltreff",
     "SimPelletHits": "Hagl som treffer",
-    "SimInvalidPelletHitRate": "Prosenten må være mellom 0 og 100."
+    "SimInvalidPelletHitRate": "Prosenten må være mellom 0 og 100.",
+    "ShotsToKill": "Shots to Kill",
+    "ArmorClass": "Armor Class"
   },
   "sv": {
     "SimTitle": "Ballistiksimulator",
@@ -847,7 +865,9 @@
     "SimPelletHitHint": "Minst ett hagel träffar per skott. Lägre genomsnitt använder detta minimum. Enskilda projektiler ändras inte.",
     "SimMeanPelletHits": "Genomsnittligt antal hagelträffar",
     "SimPelletHits": "Hagel som träffar",
-    "SimInvalidPelletHitRate": "Procenten måste vara mellan 0 och 100."
+    "SimInvalidPelletHitRate": "Procenten måste vara mellan 0 och 100.",
+    "ShotsToKill": "Shots to Kill",
+    "ArmorClass": "Armor Class"
   },
   "fi": {
     "SimTitle": "Ballistiikkasimulaattori",
@@ -932,7 +952,9 @@
     "SimPelletHitHint": "Vähintään yksi hauli osuu laukausta kohden. Pienemmät keskiarvot käyttävät tätä vähimmäistä. Yksittäiset ammukset eivät muutu.",
     "SimMeanPelletHits": "Keskimääräiset osuvat haulit",
     "SimPelletHits": "Osuvat haulit",
-    "SimInvalidPelletHitRate": "Prosentin on oltava 0–100."
+    "SimInvalidPelletHitRate": "Prosentin on oltava 0–100.",
+    "ShotsToKill": "Shots to Kill",
+    "ArmorClass": "Armor Class"
   },
   "cs": {
     "SimTitle": "Balistický simulátor",
@@ -1017,7 +1039,9 @@
     "SimPelletHitHint": "Každý výstřel zasáhne alespoň jedním brokem. Nižší průměry používají toto minimum. Jednotlivé střely se nemění.",
     "SimMeanPelletHits": "Průměr zasažených broků",
     "SimPelletHits": "Zasažené broky",
-    "SimInvalidPelletHitRate": "Procento musí být mezi 0 a 100."
+    "SimInvalidPelletHitRate": "Procento musí být mezi 0 a 100.",
+    "ShotsToKill": "Shots to Kill",
+    "ArmorClass": "Armor Class"
   },
   "sk": {
     "SimTitle": "Balistický simulátor",
@@ -1102,7 +1126,9 @@
     "SimPelletHitHint": "Každý výstrel zasiahne aspoň jedným brokom. Nižšie priemery používajú toto minimum. Jednotlivé strely sa nemenia.",
     "SimMeanPelletHits": "Priemer zasiahnutých brokov",
     "SimPelletHits": "Zasiahnuté broky",
-    "SimInvalidPelletHitRate": "Percento musí byť medzi 0 a 100."
+    "SimInvalidPelletHitRate": "Percento musí byť medzi 0 a 100.",
+    "ShotsToKill": "Shots to Kill",
+    "ArmorClass": "Armor Class"
   },
   "pl": {
     "SimTitle": "Symulator balistyki",
@@ -1187,7 +1213,9 @@
     "SimPelletHitHint": "Co najmniej jedna śrucina trafia na strzał. Niższe średnie używają tego minimum. Pojedyncze pociski pozostają bez zmian.",
     "SimMeanPelletHits": "Średnia liczba trafiających śrucin",
     "SimPelletHits": "Trafiające śruciny",
-    "SimInvalidPelletHitRate": "Procent musi wynosić od 0 do 100."
+    "SimInvalidPelletHitRate": "Procent musi wynosić od 0 do 100.",
+    "ShotsToKill": "Shots to Kill",
+    "ArmorClass": "Armor Class"
   },
   "hu": {
     "SimTitle": "Ballisztikai szimulátor",
@@ -1272,7 +1300,9 @@
     "SimPelletHitHint": "Lövésenként legalább egy sörét talál. Az alacsonyabb átlagok ezt a minimumot használják. Az egyedi lövedékek nem változnak.",
     "SimMeanPelletHits": "Átlagos találó sörétszám",
     "SimPelletHits": "Találó sörétek",
-    "SimInvalidPelletHitRate": "A százaléknak 0 és 100 között kell lennie."
+    "SimInvalidPelletHitRate": "A százaléknak 0 és 100 között kell lennie.",
+    "ShotsToKill": "Shots to Kill",
+    "ArmorClass": "Armor Class"
   },
   "ro-ro": {
     "SimTitle": "Simulator balistic",
@@ -1357,7 +1387,9 @@
     "SimPelletHitHint": "Cel puțin o alică lovește la fiecare foc. Mediile mai mici folosesc acest minim. Proiectilele unice nu se schimbă.",
     "SimMeanPelletHits": "Număr mediu de alice care lovesc",
     "SimPelletHits": "Alice care lovesc",
-    "SimInvalidPelletHitRate": "Procentul trebuie să fie între 0 și 100."
+    "SimInvalidPelletHitRate": "Procentul trebuie să fie între 0 și 100.",
+    "ShotsToKill": "Shots to Kill",
+    "ArmorClass": "Armor Class"
   },
   "el": {
     "SimTitle": "Προσομοιωτής βαλλιστικής",
@@ -1442,7 +1474,9 @@
     "SimPelletHitHint": "Τουλάχιστον ένα σκάγι χτυπά ανά βολή. Μικρότεροι μέσοι όροι χρησιμοποιούν αυτό το ελάχιστο. Τα μονά βλήματα δεν αλλάζουν.",
     "SimMeanPelletHits": "Μέσος αριθμός σκαγιών που χτυπούν",
     "SimPelletHits": "Σκάγια που χτυπούν",
-    "SimInvalidPelletHitRate": "Το ποσοστό πρέπει να είναι μεταξύ 0 και 100."
+    "SimInvalidPelletHitRate": "Το ποσοστό πρέπει να είναι μεταξύ 0 και 100.",
+    "ShotsToKill": "Shots to Kill",
+    "ArmorClass": "Armor Class"
   },
   "tr": {
     "SimTitle": "Balistik simülatörü",
@@ -1527,7 +1561,9 @@
     "SimPelletHitHint": "Her atışta en az bir saçma isabet eder. Daha düşük ortalamalar bu asgari değeri kullanır. Tek mermiler değişmez.",
     "SimMeanPelletHits": "Ortalama isabet eden saçma",
     "SimPelletHits": "İsabet eden saçmalar",
-    "SimInvalidPelletHitRate": "Yüzde 0 ile 100 arasında olmalıdır."
+    "SimInvalidPelletHitRate": "Yüzde 0 ile 100 arasında olmalıdır.",
+    "ShotsToKill": "Shots to Kill",
+    "ArmorClass": "Armor Class"
   },
   "ru": {
     "SimTitle": "Баллистический симулятор",
@@ -1612,7 +1648,9 @@
     "SimPelletHitHint": "За выстрел попадает хотя бы одна дробина. Меньшие средние используют этот минимум. Одиночные пули не меняются.",
     "SimMeanPelletHits": "Среднее число попавших дробин",
     "SimPelletHits": "Попавшие дробины",
-    "SimInvalidPelletHitRate": "Процент должен быть от 0 до 100."
+    "SimInvalidPelletHitRate": "Процент должен быть от 0 до 100.",
+    "ShotsToKill": "Shots to Kill",
+    "ArmorClass": "Armor Class"
   },
   "uk": {
     "SimTitle": "Балістичний симулятор",
@@ -1697,7 +1735,9 @@
     "SimPelletHitHint": "За постріл влучає хоча б одна дробина. Менші середні використовують цей мінімум. Одиночні кулі не змінюються.",
     "SimMeanPelletHits": "Середня кількість влучних дробин",
     "SimPelletHits": "Влучні дробини",
-    "SimInvalidPelletHitRate": "Відсоток має бути від 0 до 100."
+    "SimInvalidPelletHitRate": "Відсоток має бути від 0 до 100.",
+    "ShotsToKill": "Shots to Kill",
+    "ArmorClass": "Armor Class"
   },
   "ar": {
     "SimTitle": "محاكي المقذوفات",
@@ -1782,7 +1822,9 @@
     "SimPelletHitHint": "تصيب حبيبة واحدة على الأقل في كل طلقة. تستخدم المتوسطات الأقل هذا الحد الأدنى. لا تتغير الذخيرة ذات المقذوف الواحد.",
     "SimMeanPelletHits": "متوسط الحبيبات المصيبة",
     "SimPelletHits": "الحبيبات المصيبة",
-    "SimInvalidPelletHitRate": "يجب أن تكون النسبة بين 0 و100."
+    "SimInvalidPelletHitRate": "يجب أن تكون النسبة بين 0 و100.",
+    "ShotsToKill": "Shots to Kill",
+    "ArmorClass": "Armor Class"
   },
   "hi": {
     "SimTitle": "बैलिस्टिक सिम्युलेटर",
@@ -1867,7 +1909,9 @@
     "SimPelletHitHint": "हर शॉट में कम से कम एक छर्रा लगता है। कम औसत इसी न्यूनतम का उपयोग करते हैं। एकल प्रक्षेप्य नहीं बदलते।",
     "SimMeanPelletHits": "लगने वाले छर्रों का औसत",
     "SimPelletHits": "लगने वाले छर्रे",
-    "SimInvalidPelletHitRate": "प्रतिशत 0 से 100 के बीच होना चाहिए।"
+    "SimInvalidPelletHitRate": "प्रतिशत 0 से 100 के बीच होना चाहिए।",
+    "ShotsToKill": "Shots to Kill",
+    "ArmorClass": "Armor Class"
   },
   "id": {
     "SimTitle": "Simulator balistik",
@@ -1952,7 +1996,9 @@
     "SimPelletHitHint": "Setidaknya satu pelet mengenai sasaran per tembakan. Rata-rata lebih rendah memakai minimum ini. Proyektil tunggal tidak berubah.",
     "SimMeanPelletHits": "Rata-rata pelet yang mengenai sasaran",
     "SimPelletHits": "Pelet yang mengenai sasaran",
-    "SimInvalidPelletHitRate": "Persentase harus antara 0 dan 100."
+    "SimInvalidPelletHitRate": "Persentase harus antara 0 dan 100.",
+    "ShotsToKill": "Shots to Kill",
+    "ArmorClass": "Armor Class"
   },
   "ja": {
     "SimTitle": "弾道シミュレーター",
@@ -2037,7 +2083,9 @@
     "SimPelletHitHint": "各射撃で最低1粒が命中します。それ未満の平均値はこの最低数を使用します。単一弾頭は変わりません。",
     "SimMeanPelletHits": "平均命中ペレット数",
     "SimPelletHits": "命中ペレット数",
-    "SimInvalidPelletHitRate": "命中率は0から100の間で指定してください。"
+    "SimInvalidPelletHitRate": "命中率は0から100の間で指定してください。",
+    "ShotsToKill": "Shots to Kill",
+    "ArmorClass": "Armor Class"
   },
   "ko": {
     "SimTitle": "탄도 시뮬레이터",
@@ -2122,7 +2170,9 @@
     "SimPelletHitHint": "사격마다 최소 한 개의 펠릿이 명중합니다. 더 낮은 평균은 이 최소값을 사용합니다. 단일 투사체는 바뀌지 않습니다.",
     "SimMeanPelletHits": "평균 명중 펠릿 수",
     "SimPelletHits": "명중 펠릿 수",
-    "SimInvalidPelletHitRate": "비율은 0에서 100 사이여야 합니다."
+    "SimInvalidPelletHitRate": "비율은 0에서 100 사이여야 합니다.",
+    "ShotsToKill": "Shots to Kill",
+    "ArmorClass": "Armor Class"
   },
   "zh-cn": {
     "SimTitle": "弹道模拟器",
@@ -2207,7 +2257,9 @@
     "SimPelletHitHint": "每次射击至少一颗弹丸命中。更低的平均值使用此最小值。单发投射物不受影响。",
     "SimMeanPelletHits": "平均命中弹丸数",
     "SimPelletHits": "命中弹丸数",
-    "SimInvalidPelletHitRate": "命中率必须在0到100之间。"
+    "SimInvalidPelletHitRate": "命中率必须在0到100之间。",
+    "ShotsToKill": "Shots to Kill",
+    "ArmorClass": "Armor Class"
   },
   "zh-tw": {
     "SimTitle": "彈道模擬器",
@@ -2292,7 +2344,9 @@
     "SimPelletHitHint": "每次射擊至少一顆彈丸命中。更低的平均值使用此最小值。單發投射物不受影響。",
     "SimMeanPelletHits": "平均命中彈丸數",
     "SimPelletHits": "命中彈丸數",
-    "SimInvalidPelletHitRate": "命中率必須介於0到100之間。"
+    "SimInvalidPelletHitRate": "命中率必須介於0到100之間。",
+    "ShotsToKill": "Shots to Kill",
+    "ArmorClass": "Armor Class"
   },
   "th-th": {
     "SimTitle": "เครื่องจำลองวิถีกระสุน",
@@ -2377,7 +2431,9 @@
     "SimPelletHitHint": "แต่ละนัดถูกเป้าอย่างน้อยหนึ่งเม็ด ค่าเฉลี่ยที่ต่ำกว่าจะใช้ขั้นต่ำนี้ กระสุนหัวเดียวไม่เปลี่ยนแปลง",
     "SimMeanPelletHits": "จำนวนเม็ดกระสุนถูกเป้าเฉลี่ย",
     "SimPelletHits": "เม็ดกระสุนที่ถูกเป้า",
-    "SimInvalidPelletHitRate": "เปอร์เซ็นต์ต้องอยู่ระหว่าง 0 ถึง 100"
+    "SimInvalidPelletHitRate": "เปอร์เซ็นต์ต้องอยู่ระหว่าง 0 ถึง 100",
+    "ShotsToKill": "Shots to Kill",
+    "ArmorClass": "Armor Class"
   },
   "vi": {
     "SimTitle": "Trình mô phỏng đạn đạo",
@@ -2462,6 +2518,8 @@
     "SimPelletHitHint": "Mỗi phát có ít nhất một viên ghém trúng. Giá trị trung bình thấp hơn dùng mức tối thiểu này. Đạn đơn không thay đổi.",
     "SimMeanPelletHits": "Số viên ghém trúng trung bình",
     "SimPelletHits": "Viên ghém trúng",
-    "SimInvalidPelletHitRate": "Tỷ lệ phải từ 0 đến 100."
+    "SimInvalidPelletHitRate": "Tỷ lệ phải từ 0 đến 100.",
+    "ShotsToKill": "Shots to Kill",
+    "ArmorClass": "Armor Class"
   }
 }
